@@ -1,25 +1,17 @@
 # =========================
-# Build artifacts
+# VS Code
 # =========================
-build/
-bin/
-*.o
-*.d
-*.a
-*.so
+.vscode/extensions.json
+.vscode/.ropeproject
 
-# Compiled executable
-brain
-brain_*
+# Keep: .vscode/settings.json, launch.json, tasks.json (project-specific config)
 
 # =========================
-# Python (future modules)
+# OS
 # =========================
-.venv/
-__pycache__/
-*.pyc
-*.pyo
-.env
+.DS_Store
+Thumbs.db
+desktop.ini
 
 # =========================
 # Logs / temp
@@ -28,9 +20,9 @@ __pycache__/
 *~
 *.swp
 *.bak
+*.tmp
 
 # =========================
-# OS
+# Documentation generated
 # =========================
-.DS_Store
-Thumbs.db
+Documentation/generated/
