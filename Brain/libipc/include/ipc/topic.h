@@ -5,14 +5,12 @@
 typedef enum {
     INVALID      = 0,
 
-    // Phase 1 — Perception
     CAMERA_FRAME = 1,  // SHM  NEW
     IMU_STATE    = 2,  // MQ   OLD
     WHEEL_ODOM   = 3,  // MQ   OLD
     EGO_STATE    = 4,  // MQ   OLD
-    LANE_STATE   = 5,  // MQ   NEW (depth=1)
-
-    // Phase 3 — Control
+    LANE_STATE   = 5,  // MQ   NEW 
+    
     CONTROL_CMD  = 6,  // MQ   NEVER
 
     TOPIC_COUNT

@@ -10,7 +10,6 @@ static const TopicDescriptor TOPICS[TOPIC_COUNT] = {
     [IMU_STATE]    = { "/imu_state",    MQ,  sizeof(ImuState),  16, OLD   },
     [WHEEL_ODOM]   = { "/wheel_odom",   MQ,  sizeof(WheelOdom), 16, OLD   },
     [EGO_STATE]    = { "/ego_state",    MQ,  sizeof(EgoState),   8, OLD   },
-    // depth=1: NEW → consumer always gets latest
     [LANE_STATE]   = { "/lane_state",   MQ,  sizeof(LaneState),  1, NEW   },
     [CONTROL_CMD]  = { "/control_cmd",  MQ,  sizeof(ControlCmd), 4, NEVER },
 };
