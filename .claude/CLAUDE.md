@@ -50,14 +50,16 @@ brain/
 - [x] `libipc/src/shm.c` + `shm.h` — SHM latest-wins, sub tự chờ pub init header
 - [x] `libipc/src/bus.c` + `libipc/include/ipc/bus.h` — unified API, `extern "C"` guard
 - [x] `libipc/bindings/cpp/include/ipc/bus.hpp` — `Publisher<T>` / `Subscriber<T>` RAII
-- [x] `libipc/CMakeLists.txt` + `Brain/CMakeLists.txt` — build thành công `liblibipc.a`
-- [ ] `libipc/bindings/python/ipc.py` + `ipc_schema.py`
+- [x] `libipc/CMakeLists.txt` — build `liblibipc.a` (static) + `liblibipc.so` (shared cho Python)
+- [x] `libipc/bindings/python/ipc_schema.py` — ctypes.Structure mapping toàn bộ messages/*.h + TopicId constants
+- [x] `libipc/bindings/python/ipc.py` — Publisher/Subscriber class, auto-fill MessageHeader, context manager
 
 #### Verify đã làm
 - MQ: `pub_demo` ↔ `sub_demo` (C và C++) — truyền `ImuState` qua `/imu_state` ✓
 - SHM: `shm_pub_demo` ↔ `shm_sub_demo` (C và C++) — truyền `CameraFrame` qua `/camera_frame` ✓
 - Demo nằm tại `Brain/demo/C_demo/` và `Brain/demo/Cpp_demo/`
 - Hướng dẫn: `demo/C_demo/demo.md`, `demo/Cpp_demo/cpp_demo.md`
+- Python bindings chưa verify trên xe (cần build `.so` và cross-test Python↔C) — xem `demo/Python_demo/python_demo.md`
 
 #### Quyết định đã chốt (so với plan gốc)
 - Bỏ: `GpsFix`, `Pose2D`, `Detection`, `Detections`, `BehaviorCmd` khỏi messages
@@ -69,8 +71,8 @@ brain/
 - MQ depth bị clamp xuống `msg_max` của hệ thống (mặc định 10 trên Ubuntu desktop)
 
 ### TODO còn lại (Phase 1)
-- [ ] `libipc/bindings/python/ipc.py` + `ipc_schema.py`
-- [ ] `serial_node`: `protocol.cpp` + `serial_reader.cpp` + node (bước 2)
+- [ ] **Verify Python bindings**: build `liblibipc.so` → cross-test `pub_demo.py` ↔ C `sub_demo` (và ngược lại) — xem `demo/Python_demo/python_demo.md`
+- [ ] `serial_node`: `protocol.cpp` + `serial_reader.cpp` + node (bước 2) — **cần clarify STM32 UART frame format trước**
 - [ ] `camera_node`: libcamera capture + publish SHM (bước 3)
 - [ ] `lane_node`: detector + node (bước 4)
 - [ ] `object_detection_node`: ONNX + postprocess + node (bước 5)
@@ -109,7 +111,8 @@ brain/
 - Primary runtime: **Raspberry Pi 5 / Ubuntu 24.04**, build native trên Pi
 - STM32F4: Cortex-M4, giao tiếp qua UART với Brain — không code trực tiếp trừ khi được yêu cầu
 - IPC: tự viết C, **không gợi ý ROS hay middleware bên ngoài**
-- Python node chưa implement — không scaffold trừ khi được yêu cầu rõ
+- Python bindings (`ipc.py`, `ipc_schema.py`) đã implement, chưa verify trên xe
+- Python import pattern: `sys.path.insert(0, "Brain/libipc/bindings/python")` rồi `import ipc, ipc_schema` (không dùng package import)
 - Solo project: **không over-engineer**, không abstraction thừa
 - Không có unit test — test trên xe thật
 - `messages/` là source of truth cho mọi struct — **không định nghĩa struct ở nơi khác**
