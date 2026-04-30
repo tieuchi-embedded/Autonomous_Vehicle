@@ -3,7 +3,7 @@
 
 typedef struct {
     MessageHeader h;
-    float yaw;    // radians
-    float pitch;  // radians
-    float roll;   // radians
+    uint32_t time_ms;  // ms since state_node start
+    float    angle;    // degrees — yaw from IMU
+    float    speed;    // cm/s   — computed from RPM
 } EgoState;
