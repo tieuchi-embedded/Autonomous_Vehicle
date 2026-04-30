@@ -20,17 +20,17 @@
 # =========================
 .metadata/
 .settings/
-*.launch
+# *.launch
 
 # Eclipse core files
-.project
-.cproject
+# .project
+# .cproject
 
 # CDT build files
-*.mk
-makefile
-objects.list
-sources.mk
+# *.mk
+# makefile
+# objects.list
+# sources.mk
 
 # =========================
 # CubeMX generated temporary
