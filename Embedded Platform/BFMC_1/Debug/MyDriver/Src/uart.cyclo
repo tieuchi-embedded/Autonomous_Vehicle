@@ -1,0 +1,17 @@
+../MyDriver/Src/uart.c:22:6:UART1_init	1
+../MyDriver/Src/uart.c:59:6:UART2_init	1
+../MyDriver/Src/uart.c:94:6:UART2_DMA_RX_Init	2
+../MyDriver/Src/uart.c:120:6:USART2_IRQHandler	2
+../MyDriver/Src/uart.c:132:6:UART1_Transmit	3
+../MyDriver/Src/uart.c:141:6:UART2_Transmit	3
+../MyDriver/Src/uart.c:151:9:UART1_Receive	2
+../MyDriver/Src/uart.c:160:9:UART2_Receive	2
+../MyDriver/Src/uart.c:169:6:UART1_send_number	5
+../MyDriver/Src/uart.c:188:6:UART2_send_number	5
+../MyDriver/Src/uart.c:209:6:UART1_print_log	2
+../MyDriver/Src/uart.c:216:6:UART2_print_log	2
+../MyDriver/Src/uart.c:223:6:UART1_send_float	3
+../MyDriver/Src/uart.c:238:6:UART2_send_float	3
+../MyDriver/Src/uart.c:254:9:UART_Parse_Speed	6
+../MyDriver/Src/uart.c:277:6:UART_Parse_Command	3
+../MyDriver/Src/uart.c:296:6:UART_Parse_Byte	7
