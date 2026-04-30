@@ -8,8 +8,9 @@ set(LIBIPC_SRC
 add_library(libipc STATIC ${LIBIPC_SRC})
 
 target_include_directories(libipc PUBLIC
-    ${CMAKE_SOURCE_DIR}   # for "messages/foo.h"
-    include               # for "ipc/topic.h", "ipc/bus.h"
+    ${CMAKE_SOURCE_DIR}                # for "messages/foo.h"
+    include                            # for "ipc/topic.h", "ipc/bus.h"
+    bindings/cpp/include               # for "ipc/bus.hpp"
 )
 
 target_link_libraries(libipc PUBLIC rt pthread)

@@ -6,12 +6,10 @@ typedef enum {
     INVALID      = 0,
 
     CAMERA_FRAME = 1,  // SHM  NEW
-    IMU_STATE    = 2,  // MQ   OLD
-    WHEEL_ODOM   = 3,  // MQ   OLD
-    EGO_STATE    = 4,  // MQ   OLD
-    LANE_STATE   = 5,  // MQ   NEW 
-    
-    CONTROL_CMD  = 6,  // MQ   NEVER
+    SERIAL       = 2,  // MQ   OLD  — raw sensor data from serial port(s)
+    EGO_STATE    = 3,  // MQ   OLD
+    LANE_STATE   = 4,  // MQ   NEW
+    CONTROL_CMD  = 5,  // MQ   NEVER
 
     TOPIC_COUNT
 } TopicId;
