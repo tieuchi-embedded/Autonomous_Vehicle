@@ -11,10 +11,10 @@ int main(void) {
     uint32_t seq = 0;
     printf("publishing IMU_STATE via libipc...\n");
     while (1) {
-        struct timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, &ts);
         ImuState msg = {
-            .h     = { .topic = IMU_STATE, .seq = seq, .ts_ns = (uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec },
+            .h ={  .topic = IMU_STATE, 
+                    .seq = seq, 
+                },
             .roll  = 0.01f * (float)seq,
             .pitch = 0.02f * (float)seq,
             .yaw   = 0.03f * (float)seq,
