@@ -1,27 +1,24 @@
 #include "ipc/bus.hpp"
-#include "messages/imu_state.h"
+#include "messages/ego_state.h"
 #include <cstdio>
-#include <ctime>
 #include <unistd.h>
 
 int main() {
-    ipc::Publisher<ImuState> pub(IMU_STATE);
+    ipc::Publisher<EgoState> pub(EGO_STATE);
     if (!pub.valid()) { perror("Publisher open"); return 1; }
 
     uint32_t seq = 0;
-    printf("publishing IMU_STATE via libipc C++ Publisher...\n");
+    printf("publishing EGO_STATE via libipc C++ Publisher...\n");
     while (true) {
-        struct timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        ImuState msg = {
-            .h     = { .topic = IMU_STATE, .seq = seq, .ts_ns = (uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec },
-            .roll  = 0.01f * (float)seq,
-            .pitch = 0.02f * (float)seq,
-            .yaw   = 0.03f * (float)seq,
-            .ax = 0.0f, .ay = 0.0f, .az = 9.81f,
-        };
+        EgoState msg{};
+        msg.h.topic = EGO_STATE;
+        msg.h.seq   = seq;
+        msg.time_ms = seq * 1000;
+        msg.angle   = 0.5f * (float)seq;
+        msg.speed   = 10.0f;
         pub.send(msg);
-        printf("pub seq=%u roll=%.2f pitch=%.2f yaw=%.2f\n", seq, msg.roll, msg.pitch, msg.yaw);
+        printf("pub seq=%u time_ms=%u angle=%.2f speed=%.2f\n",
+               seq, msg.time_ms, msg.angle, msg.speed);
         seq++;
         sleep(1);
     }

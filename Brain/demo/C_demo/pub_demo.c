@@ -1,27 +1,24 @@
 #include "ipc/bus.h"
-#include "messages/imu_state.h"
+#include "messages/ego_state.h"
 #include <stdio.h>
-#include <time.h>
 #include <unistd.h>
 
 int main(void) {
-    ipc_publisher_t* pub = ipc_publish_open(IMU_STATE, sizeof(ImuState));
+    ipc_publisher_t* pub = ipc_publish_open(EGO_STATE, sizeof(EgoState));
     if (!pub) { perror("ipc_publish_open"); return 1; }
 
     uint32_t seq = 0;
-    printf("publishing IMU_STATE via libipc...\n");
+    printf("publishing EGO_STATE via libipc...\n");
     while (1) {
-        ImuState msg = {
-            .h ={  .topic = IMU_STATE, 
-                    .seq = seq, 
-                },
-            .roll  = 0.01f * (float)seq,
-            .pitch = 0.02f * (float)seq,
-            .yaw   = 0.03f * (float)seq,
-            .ax = 0.0f, .ay = 0.0f, .az = 9.81f,
+        EgoState msg = {
+            .h       = { .topic = EGO_STATE, .seq = seq },
+            .time_ms = seq * 1000,
+            .angle   = 0.5f * (float)seq,
+            .speed   = 10.0f,
         };
         ipc_publish(pub, &msg, sizeof(msg));
-        printf("pub seq=%u roll=%.2f pitch=%.2f yaw=%.2f\n", seq, msg.roll, msg.pitch, msg.yaw);
+        printf("pub seq=%u time_ms=%u angle=%.2f speed=%.2f\n",
+               seq, msg.time_ms, msg.angle, msg.speed);
         seq++;
         sleep(1);
     }
