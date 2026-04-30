@@ -277,14 +277,14 @@ uint8_t UART_Parse_Speed( uint8_t *buf, uint16_t len, int *speed_out)
 void UART_Parse_Command(char *cmd)
 {
     //#speed:60;;
-    if (strncmp(cmd, "#RPM:", 7) == 0) {
-        int speed = atoi(cmd + 7);
+    if (strncmp(cmd, "#RPM:", 5) == 0) {
+        int speed = atoi(cmd + 5);
         Servo_Speed_Set(speed);
         return;
     }
 
-    if (strncmp(cmd, "#STR:", 7) == 0) {
-        int steer = atoi(cmd + 7);
+    if (strncmp(cmd, "#STR:", 5) == 0) {
+        int steer = atoi(cmd + 5);
         Servo_Steering_Set(steer);
         return;
     }
