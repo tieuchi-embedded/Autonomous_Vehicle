@@ -10,3 +10,5 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(libipc)
 add_subdirectory(demo)
+add_subdirectory(perception/state)
+add_subdirectory(io/serial_bridge)

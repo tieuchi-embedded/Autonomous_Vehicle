@@ -43,44 +43,51 @@ brain/
 
 #### Foundation — trạng thái implement
 - [x] Cấu trúc thư mục `Brain/` (chú ý: viết hoa B)
-- [x] `messages/` — POD structs: `message.h`, `imu_state.h`, `wheel_odom.h`, `ego_state.h`, `camera_frame.h`, `lane_state.h`, `control_cmd.h`
+- [x] `messages/` — POD structs: `message.h`, `serial_data.h`, `ego_state.h`, `camera_frame.h`, `lane_state.h`, `control_cmd.h`
 - [x] `libipc/include/ipc/topic.h` — TopicId enum + TransportKind + DropPolicy + TopicDescriptor
 - [x] `libipc/src/topic.c` — descriptor table + `topic_get()`
 - [x] `libipc/src/mq_transport.c` + `mq_transport.h` — POSIX MQ wrap, clamp depth theo `/proc/sys/fs/mqueue/msg_max`
 - [x] `libipc/src/shm.c` + `shm.h` — SHM latest-wins, sub tự chờ pub init header
 - [x] `libipc/src/bus.c` + `libipc/include/ipc/bus.h` — unified API, `extern "C"` guard
 - [x] `libipc/bindings/cpp/include/ipc/bus.hpp` — `Publisher<T>` / `Subscriber<T>` RAII
-- [x] `libipc/CMakeLists.txt` — build `liblibipc.a` (static) + `liblibipc.so` (shared cho Python)
-- [x] `libipc/bindings/python/ipc_schema.py` — ctypes.Structure mapping toàn bộ messages/*.h + TopicId constants
+- [x] `libipc/CMakeLists.txt` — build `liblibipc.a` (static) + `liblibipc.so` (shared cho Python), expose `bindings/cpp/include`
+- [x] `libipc/bindings/python/ipc_schema.py` — ctypes.Structure mapping messages/*.h + TopicId constants
 - [x] `libipc/bindings/python/ipc.py` — Publisher/Subscriber class, auto-fill MessageHeader, context manager
+- [x] `io/serial_bridge/` — `protocol.cpp` parse `@IMU`/`@RPM`, `serial_reader.cpp` UART termios, `serial_node` pub `SERIAL`
+- [x] `perception/state/` — `StateEstimator` sub `SERIAL` → compute `angle`+`speed` → pub `EGO_STATE`
 
 #### Verify đã làm
-- MQ: `pub_demo` ↔ `sub_demo` (C và C++) — truyền `ImuState` qua `/imu_state` ✓
-- SHM: `shm_pub_demo` ↔ `shm_sub_demo` (C và C++) — truyền `CameraFrame` qua `/camera_frame` ✓
-- Demo nằm tại `Brain/demo/C_demo/` và `Brain/demo/Cpp_demo/`
-- Hướng dẫn: `demo/C_demo/demo.md`, `demo/Cpp_demo/cpp_demo.md`
-- Python bindings chưa verify trên xe (cần build `.so` và cross-test Python↔C) — xem `demo/Python_demo/python_demo.md`
+- MQ: `pub_demo` ↔ `sub_demo` (C và C++) ✓
+- SHM: `shm_pub_demo` ↔ `shm_sub_demo` (C và C++) ✓
+- `serial_node` + `sub_demo` — truyền `SerialData` từ STM32 thật qua `/dev/ttyACM0` ✓
+- Build clean toàn bộ target trên máy dev ✓
+- Python bindings chưa verify trên xe — xem `demo/Python_demo/python_demo.md`
 
-#### Quyết định đã chốt (so với plan gốc)
-- Bỏ: `GpsFix`, `Pose2D`, `Detection`, `Detections`, `BehaviorCmd` khỏi messages
-- `EgoState` chỉ còn `yaw`, `pitch`, `roll` (bỏ `v`, `yaw_rate`)
+#### Quyết định đã chốt
+- Bỏ `ImuState`, `WheelOdom` — thay bằng `SerialData` (raw UART data)
+- `SerialData` = `{yaw, pitch, roll, wx, wy, wz, ax, ay, az, rpm}` — pub bởi `serial_node`, wx/wy/wz/ax/ay/az tạm = 0
+- `EgoState` = `{time_ms, angle, speed}` — pub bởi `state_node`
+  - `time_ms`: ms kể từ khi `state_node` start
+  - `angle`: yaw degrees pass-through từ IMU
+  - `speed`: cm/s = `(rpm / 7) * 2π * 6.5 / 60`
+- TopicId hiện tại: `CAMERA_FRAME=1, SERIAL=2, EGO_STATE=3, LANE_STATE=4, CONTROL_CMD=5`
+- UART protocol STM32: `@IMU:yaw,pitch,roll;;\r\n` và `@RPM:rpm;;\r\n` (degrees, motor RPM)
+- Hardware: gear ratio 7:1, wheel radius 6.5cm, `/dev/ttyACM0`, baud 115200
+- Bỏ GPS (không có hardware) — `localization_node` chỉ dead reckoning
+- V2X node: defer, chưa cần
 - `LaneState` chỉ còn `heading_err_rad`
-- TopicId enum bỏ prefix `TOPIC_`, DropPolicy dùng `NEW`/`OLD`/`NEVER`, TransportKind bỏ prefix `TRANSPORT_`
+- TopicId enum bỏ prefix `TOPIC_`, DropPolicy dùng `NEW`/`OLD`/`NEVER`
 - POSIX MQ/SHM names: `/<topic>` (bỏ prefix `bfmc_`)
-- `bus.h` có `extern "C"` guard để C++ node dùng trực tiếp
-- MQ depth bị clamp xuống `msg_max` của hệ thống (mặc định 10 trên Ubuntu desktop)
+- MQ depth clamp xuống `msg_max` hệ thống (mặc định 10 trên Ubuntu desktop)
 
 ### TODO còn lại (Phase 1)
-- [ ] **Verify Python bindings**: build `liblibipc.so` → cross-test `pub_demo.py` ↔ C `sub_demo` (và ngược lại) — xem `demo/Python_demo/python_demo.md`
-- [ ] `serial_node`: `protocol.cpp` + `serial_reader.cpp` + node (bước 2) — **cần clarify STM32 UART frame format trước**
-- [ ] `camera_node`: libcamera capture + publish SHM (bước 3)
-- [ ] `lane_node`: detector + node (bước 4)
-- [ ] `object_detection_node`: ONNX + postprocess + node (bước 5)
-- [ ] `state_node`: complementary filter + node (bước 6)
-- [ ] `localization_node`: dead reckoning + GPS fusion + node (bước 7)
-- [ ] `launch/run_perception.sh` — integration (bước 8)
-- [ ] `config.yaml` schema key/value chi tiết
-- [ ] Quyết định V2X node có cần không
+- [ ] **Verify Python bindings**: cross-test `pub_demo.py` ↔ C `sub_demo` — xem `demo/Python_demo/python_demo.md`
+- [ ] `camera_node`: libcamera capture + publish SHM `CAMERA_FRAME` (bước 3)
+- [ ] `lane_node`: detector + node, sub `CAMERA_FRAME` pub `LANE_STATE` (bước 4)
+- [ ] `object_detection_node`: ONNX YOLOv8n + postprocess + node (bước 5)
+- [ ] `localization_node`: dead reckoning, sub `EGO_STATE` pub `POSE2D` (bước 6) — cần thêm `POSE2D` message nếu dùng
+- [ ] `launch/run_perception.sh` — integration (bước 7)
+- [ ] `ipc_schema.py` cập nhật cho khớp `SerialData`/`EgoState` mới (chưa sync)
 
 ---
 
