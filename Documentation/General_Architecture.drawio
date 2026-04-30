@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e" pages="2">
     <diagram name="General_Architecture" id="KcDiMC-I45c9lLN1iN-j">
-        <mxGraphModel dx="3758" dy="433" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="5651" dy="1609" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -703,15 +703,6 @@
                             <mxPoint x="560" y="478"/>
                         </Array>
                     </mxGeometry>
-                </mxCell>
-                <mxCell id="X4AOR_93v3K9nxn3Lkd5-1" value="&lt;font style=&quot;font-size: 50px;&quot;&gt;Component Diagram&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
-                    <mxGeometry x="-1170" y="1060" width="580" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="X4AOR_93v3K9nxn3Lkd5-2" value="&lt;font style=&quot;font-size: 50px;&quot;&gt;Sequence Diagram&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
-                    <mxGeometry x="-570" y="1060" width="580" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="X4AOR_93v3K9nxn3Lkd5-3" value="&lt;font style=&quot;font-size: 50px;&quot;&gt;Flow Chart&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="1060" width="580" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="X4AOR_93v3K9nxn3Lkd5-4" value="&lt;b&gt;&lt;font style=&quot;font-size: 30px;&quot;&gt;Camera&lt;/font&gt;&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="-3130" y="170" width="250" height="60" as="geometry"/>
