@@ -38,20 +38,26 @@ brain/
 ```
 
 ### Tiến độ
-- **Phase 1 — Perception**: đang implement Foundation
+- **Phase 1 — Perception**: Foundation **hoàn tất**, đã verify trên máy dev
 - **Phase 2/3/4**: còn sketch, chưa plan chi tiết
 
 #### Foundation — trạng thái implement
-- [x] Cấu trúc thư mục `brain/` — toàn bộ file/folder rỗng đã tạo
-- [x] `messages/` — POD structs hoàn tất: `message.h`, `imu_state.h`, `wheel_odom.h`, `ego_state.h`, `camera_frame.h`, `lane_state.h`, `control_cmd.h` (stub P3)
+- [x] Cấu trúc thư mục `Brain/` (chú ý: viết hoa B)
+- [x] `messages/` — POD structs: `message.h`, `imu_state.h`, `wheel_odom.h`, `ego_state.h`, `camera_frame.h`, `lane_state.h`, `control_cmd.h`
 - [x] `libipc/include/ipc/topic.h` — TopicId enum + TransportKind + DropPolicy + TopicDescriptor
 - [x] `libipc/src/topic.c` — descriptor table + `topic_get()`
-- [ ] `libipc/src/mq_transport.c` + `mq_transport.h`
-- [ ] `libipc/src/shm.c` + `shm.h`
-- [ ] `libipc/src/bus.c` + `libipc/include/ipc/bus.h`
-- [ ] `libipc/bindings/cpp/include/ipc/bus.hpp`
+- [x] `libipc/src/mq_transport.c` + `mq_transport.h` — POSIX MQ wrap, clamp depth theo `/proc/sys/fs/mqueue/msg_max`
+- [x] `libipc/src/shm.c` + `shm.h` — SHM latest-wins, sub tự chờ pub init header
+- [x] `libipc/src/bus.c` + `libipc/include/ipc/bus.h` — unified API, `extern "C"` guard
+- [x] `libipc/bindings/cpp/include/ipc/bus.hpp` — `Publisher<T>` / `Subscriber<T>` RAII
+- [x] `libipc/CMakeLists.txt` + `Brain/CMakeLists.txt` — build thành công `liblibipc.a`
 - [ ] `libipc/bindings/python/ipc.py` + `ipc_schema.py`
-- [ ] `libipc/CMakeLists.txt` + `brain/CMakeLists.txt`
+
+#### Verify đã làm
+- MQ: `pub_demo` ↔ `sub_demo` (C và C++) — truyền `ImuState` qua `/imu_state` ✓
+- SHM: `shm_pub_demo` ↔ `shm_sub_demo` (C và C++) — truyền `CameraFrame` qua `/camera_frame` ✓
+- Demo nằm tại `Brain/demo/C_demo/` và `Brain/demo/Cpp_demo/`
+- Hướng dẫn: `demo/C_demo/demo.md`, `demo/Cpp_demo/cpp_demo.md`
 
 #### Quyết định đã chốt (so với plan gốc)
 - Bỏ: `GpsFix`, `Pose2D`, `Detection`, `Detections`, `BehaviorCmd` khỏi messages
@@ -59,8 +65,18 @@ brain/
 - `LaneState` chỉ còn `heading_err_rad`
 - TopicId enum bỏ prefix `TOPIC_`, DropPolicy dùng `NEW`/`OLD`/`NEVER`, TransportKind bỏ prefix `TRANSPORT_`
 - POSIX MQ/SHM names: `/<topic>` (bỏ prefix `bfmc_`)
+- `bus.h` có `extern "C"` guard để C++ node dùng trực tiếp
+- MQ depth bị clamp xuống `msg_max` của hệ thống (mặc định 10 trên Ubuntu desktop)
 
-### TODO còn lại
+### TODO còn lại (Phase 1)
+- [ ] `libipc/bindings/python/ipc.py` + `ipc_schema.py`
+- [ ] `serial_node`: `protocol.cpp` + `serial_reader.cpp` + node (bước 2)
+- [ ] `camera_node`: libcamera capture + publish SHM (bước 3)
+- [ ] `lane_node`: detector + node (bước 4)
+- [ ] `object_detection_node`: ONNX + postprocess + node (bước 5)
+- [ ] `state_node`: complementary filter + node (bước 6)
+- [ ] `localization_node`: dead reckoning + GPS fusion + node (bước 7)
+- [ ] `launch/run_perception.sh` — integration (bước 8)
 - [ ] `config.yaml` schema key/value chi tiết
 - [ ] Quyết định V2X node có cần không
 
@@ -68,7 +84,7 @@ brain/
 
 ## Tech stack
 - Languages: C (C11), C++ (C++17), Python 3.12, Bash
-- Build: CMake 3.26, build native trên Raspberry Pi 5
+- Build: CMake 3.22+ (máy dev), build native trên Raspberry Pi 5
 - Target: Raspberry Pi 5 (Ubuntu 24.04) + STM32F4 (ARM Cortex-M4)
 - IPC: tự viết — SHM latest-wins + POSIX MQ (không dùng ROS)
 - Testing: xe thật, không unit test
