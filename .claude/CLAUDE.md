@@ -55,11 +55,14 @@ brain/
 - [x] `libipc/bindings/python/ipc.py` — Publisher/Subscriber class, auto-fill MessageHeader, context manager
 - [x] `io/serial_bridge/` — `protocol.cpp` parse `@IMU`/`@RPM`, `serial_reader.cpp` UART termios, `serial_node` pub `SERIAL`
 - [x] `perception/state/` — `StateEstimator` sub `SERIAL` → compute `angle`+`speed` → pub `EGO_STATE`
+- [x] `perception/camera_sim/` — `camera_sim_node` đọc MP4 → resize 320x240 → pub `CAMERA_FRAME` (SHM), loop video
+- [x] `perception/lane/` — IPM + HLS binary + sliding window + polyfit bậc 2 → pub `LANE_STATE`
 
 #### Verify đã làm
 - MQ: `pub_demo` ↔ `sub_demo` (C và C++) ✓
 - SHM: `shm_pub_demo` ↔ `shm_sub_demo` (C và C++) ✓
 - `serial_node` + `sub_demo` — truyền `SerialData` từ STM32 thật qua `/dev/ttyACM0` ✓
+- `camera_sim_node` + `lane_node --show` — pipeline video→lane detect chạy trên máy dev ✓
 - Build clean toàn bộ target trên máy dev ✓
 - Python bindings chưa verify trên xe — xem `demo/Python_demo/python_demo.md`
 
@@ -70,24 +73,46 @@ brain/
   - `time_ms`: ms kể từ khi `state_node` start
   - `angle`: yaw degrees pass-through từ IMU
   - `speed`: cm/s = `(rpm / 7) * 2π * 6.5 / 60`
+- `LaneState` = `{heading_err_rad, lateral_offset_m}` — pub bởi `lane_node`
+  - `heading_err_rad`: góc tiếp tuyến lane tham chiếu vs trục xe (atan của derivative poly tại bottom)
+  - `lateral_offset_m`: khoảng cách ngang tâm xe vs tâm lane (m), +right
 - TopicId hiện tại: `CAMERA_FRAME=1, SERIAL=2, EGO_STATE=3, LANE_STATE=4, CONTROL_CMD=5`
 - UART protocol STM32: `@IMU:yaw,pitch,roll;;\r\n` và `@RPM:rpm;;\r\n` (degrees, motor RPM)
 - Hardware: gear ratio 7:1, wheel radius 6.5cm, `/dev/ttyACM0`, baud 115200
 - Bỏ GPS (không có hardware) — `localization_node` chỉ dead reckoning
 - V2X node: defer, chưa cần
-- `LaneState` chỉ còn `heading_err_rad`
 - TopicId enum bỏ prefix `TOPIC_`, DropPolicy dùng `NEW`/`OLD`/`NEVER`
 - POSIX MQ/SHM names: `/<topic>` (bỏ prefix `bfmc_`)
 - MQ depth clamp xuống `msg_max` hệ thống (mặc định 10 trên Ubuntu desktop)
+- **SHM cleanup**: `ipc_publish_close` tự unlink MQ/SHM — không cần `rm -f /dev/mqueue/* /dev/shm/*` thủ công
+- **SHM sub**: sub chờ pub tạo SHM trước (không tự create/ftruncate) — **phải chạy pub trước sub**
+
+#### lane_node — chi tiết implement
+- **Pipeline**: `CAMERA_FRAME (SHM)` → IPM warp → HLS binary (L channel only, L_MIN=200) → sliding window → polyfit bậc 2 → EMA tracker → `LANE_STATE (MQ)`
+- **Ưu tiên lane**: right lane cho heading, fallback left khi right mất, tự recover về right
+- **`LaneSource` enum**: `RIGHT`, `LEFT`, `NONE` — expose trong `DetectResult`
+- **Debug `--show`**: 3 đường trên warped image:
+  - Xanh lá (cam nếu fallback): LINE 1 bám poly lane tham chiếu
+  - Trắng: LINE 2 thẳng đứng giữa ảnh (thân xe)
+  - Vàng: LINE 3 song song LINE 1, dính LINE 2 tại bottom
+  - Đỏ đáy: offset segment LINE 1 ↔ LINE 2
+- **IPM constants** (tune theo video `2p_haveturn.mp4`, 320x240):
+  - `SRC_TL_X=0.15, SRC_TR_X=0.85, SRC_TOP_Y=0.30`
+  - `SRC_BL_X=0.00, SRC_BR_X=1.00, SRC_BOT_Y=0.80`
+- **Còn cần tune**: `PIXEL_TO_M=0.005` chưa calibrate thực tế
+
+#### libipc — bug fix đã làm
+- `shm.c shm_open_sub`: bỏ `ftruncate` — sub chỉ open (không create), tránh shrink SHM của pub gây Bus error
+- `bus.c ipc_publish_close`: thêm `shm_unlink_topic` / `mq_transport_unlink` để tự cleanup khi pub đóng
 
 ### TODO còn lại (Phase 1)
 - [ ] **Verify Python bindings**: cross-test `pub_demo.py` ↔ C `sub_demo` — xem `demo/Python_demo/python_demo.md`
-- [ ] `camera_node`: libcamera capture + publish SHM `CAMERA_FRAME` (bước 3)
-- [ ] `lane_node`: detector + node, sub `CAMERA_FRAME` pub `LANE_STATE` (bước 4)
-- [ ] `object_detection_node`: ONNX YOLOv8n + postprocess + node (bước 5)
-- [ ] `localization_node`: dead reckoning, sub `EGO_STATE` pub `POSE2D` (bước 6) — cần thêm `POSE2D` message nếu dùng
-- [ ] `launch/run_perception.sh` — integration (bước 7)
-- [ ] `ipc_schema.py` cập nhật cho khớp `SerialData`/`EgoState` mới (chưa sync)
+- [ ] **`ipc_schema.py`** cập nhật cho khớp `SerialData`/`EgoState`/`LaneState` mới (chưa sync)
+- [ ] **Tune lane_node**: `PIXEL_TO_M`, IPM points trên xe thật (góc camera thật khác video)
+- [ ] `camera_node`: libcamera capture thật + publish SHM (thay `camera_sim_node` khi có camera)
+- [ ] `object_detection_node`: ONNX YOLOv8n + postprocess + node
+- [ ] `localization_node`: dead reckoning, sub `EGO_STATE`
+- [ ] `launch/run_perception.sh` — integration tất cả node
 
 ---
 
