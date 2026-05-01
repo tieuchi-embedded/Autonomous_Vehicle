@@ -51,8 +51,13 @@ int ipc_publish(ipc_publisher_t* pub, const void* msg, size_t size) {
 
 void ipc_publish_close(ipc_publisher_t* pub) {
     if (!pub) return;
-    if (pub->transport == SHM) shm_close(&pub->shm);
-    else mq_transport_close(&pub->mq);
+    if (pub->transport == SHM) {
+        shm_close(&pub->shm);
+        shm_unlink_topic(pub->id);
+    } else {
+        mq_transport_close(&pub->mq);
+        mq_transport_unlink(pub->id);
+    }
     free(pub);
 }
 

@@ -65,28 +65,30 @@ int shm_open_sub(TopicId id, ShmHandle* out) {
     const TopicDescriptor* td = topic_get(id);
     if (!td) return -1;
 
-    // Open or create — sub doesn't know payload_size yet, read it from header
-    int fd = shm_open(td->name, O_CREAT | O_RDWR, 0600);
-    if (fd < 0) return -1;
-
-    // Map just the header first to read slot_size and n_slots
-    size_t hdr_size = SHM_HDR_SIZE;
-    if (ftruncate(fd, (off_t)hdr_size) < 0 && errno != EINVAL) {
-        // EINVAL = already larger, which is fine
-        close(fd); return -1;
+    // Wait for pub to create the SHM — do NOT create it ourselves.
+    // Creating here risks ftruncating an already-sized file, shrinking it and
+    // causing Bus errors in the publisher.
+    int fd = -1;
+    while (fd < 0) {
+        fd = shm_open(td->name, O_RDWR, 0600);
+        if (fd < 0) {
+            struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000L };
+            nanosleep(&ts, NULL);
+        }
     }
-    ShmHeader* hdr = mmap(NULL, hdr_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+    // Map header only to read slot_size/n_slots written by pub.
+    ShmHeader* hdr = mmap(NULL, SHM_HDR_SIZE, PROT_READ, MAP_SHARED, fd, 0);
     if (hdr == MAP_FAILED) { close(fd); return -1; }
 
-    // Wait until pub initializes the header
     while (hdr->slot_size == 0 || hdr->n_slots == 0) {
-        struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000L }; // 10ms
+        struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000L };
         nanosleep(&ts, NULL);
     }
 
     uint32_t slot_size = hdr->slot_size;
     uint16_t n_slots   = hdr->n_slots;
-    munmap(hdr, hdr_size);
+    munmap(hdr, SHM_HDR_SIZE);
 
     size_t map_size = SHM_HDR_SIZE + (size_t)n_slots * slot_size;
     void* map = mmap(NULL, map_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
