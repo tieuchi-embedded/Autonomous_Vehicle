@@ -20,6 +20,9 @@ public:
     // Returns nullopt on timeout (1s) or read error.
     std::optional<std::string> read_line();
 
+    // Expose fd for shared use by SerialWriter (same UART, full-duplex).
+    int fd() const { return fd_; }
+
 private:
     int fd_ = -1;
 };

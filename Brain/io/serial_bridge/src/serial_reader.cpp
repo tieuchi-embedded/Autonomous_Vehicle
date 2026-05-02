@@ -23,7 +23,7 @@ static speed_t to_baud(int baud) {
 }
 
 SerialReader::SerialReader(const std::string& device, int baud) {
-    fd_ = ::open(device.c_str(), O_RDONLY | O_NOCTTY);
+    fd_ = ::open(device.c_str(), O_RDWR | O_NOCTTY);
     if (fd_ < 0)
         throw std::runtime_error("open " + device + ": " + std::strerror(errno));
 

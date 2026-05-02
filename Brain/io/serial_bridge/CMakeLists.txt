@@ -1,6 +1,7 @@
 add_library(serial_bridge STATIC
     src/protocol.cpp
     src/serial_reader.cpp
+    src/serial_writer.cpp
 )
 
 target_include_directories(serial_bridge PUBLIC
