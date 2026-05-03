@@ -1,2 +1,2 @@
-../Src/main.c:24:20:FPU_Enable	1
-../Src/main.c:36:5:main	3
+../Src/main.c:23:20:FPU_Enable	1
+../Src/main.c:35:5:main	3

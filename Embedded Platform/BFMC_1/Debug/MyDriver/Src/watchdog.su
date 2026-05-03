@@ -1,2 +1,2 @@
-../MyDriver/Src/watchdog.c:12:6:Watchdog_Init	24	static
-../MyDriver/Src/watchdog.c:29:6:Feed_WD	16	static
+../MyDriver/Src/watchdog.c:10:6:Watchdog_Init	4	static
+../MyDriver/Src/watchdog.c:21:6:Feed_WD	4	static

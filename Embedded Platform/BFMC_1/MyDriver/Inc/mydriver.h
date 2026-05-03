@@ -11,6 +11,8 @@
 #ifndef INC_MYDRIVER_H_
 #define INC_MYDRIVER_H_
 
+#include "stm32f401xx.h"
+
 #define UART2_RX_BUF_SIZE 256
 extern volatile uint8_t uart2_rx_dma_buf[UART2_RX_BUF_SIZE];
 //extern volatile uint16_t uart2_rx_len;

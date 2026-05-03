@@ -5,15 +5,7 @@
  *      Author: Admin
  */
 #include "mydriver.h"
-#define RCC_BASE_ADDR      0x40023800UL
-#define GPIOA_BASE_ADDR    0x40020000UL
-#define USART1_BASE_ADDR   0x40011000UL
-#define USART2_BASE_ADDR   0x40004400UL
-#define DMA1_BASE_ADDR        0x40026000UL
 
-
-#define NVIC_ISER0   ((volatile uint32_t*)0xE000E100)
-#define NVIC_ISER1   ((volatile uint32_t*)0xE000E104)
 #define USART2_IRQN  38
 
 #define UART2_RX_BUF_SIZE 256
@@ -21,151 +13,113 @@ volatile uint8_t uart2_rx_dma_buf[UART2_RX_BUF_SIZE];
 
 void UART1_init(void)
 {
-    uint32_t* RCC_AHB1ENR = (uint32_t*)(RCC_BASE_ADDR + 0x30);
-    uint32_t* RCC_APB2ENR = (uint32_t*)(RCC_BASE_ADDR + 0x44);
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+    RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 
-    *RCC_AHB1ENR |= (1 << 0);    // GPIOA clock
-    *RCC_APB2ENR |= (1 << 4);    // USART1 clock
+    GPIOA->MODER &= ~(0b11 << (9 * 2));            //PA9 - TX - AF7
+    GPIOA->MODER |=  (0b10 << (9 * 2));
+    GPIOA->AFR[1] &= ~(0xF << ((9 - 8) * 4));
+    GPIOA->AFR[1] |=  (0x7 << ((9 - 8) * 4));
 
-    uint32_t* GPIOA_MODER = (uint32_t*)(GPIOA_BASE_ADDR + 0x00);
-    uint32_t* GPIOA_AFRH  = (uint32_t*)(GPIOA_BASE_ADDR + 0x24);
-
-    *GPIOA_MODER &= ~(0b11 << (9 * 2));				//PA9 - TX - AF7
-    *GPIOA_MODER |=  (0b10 << (9 * 2));
-    *GPIOA_AFRH  &= ~(0xF << ((9 - 8) * 4));
-    *GPIOA_AFRH  |=  (0x7 << ((9 - 8) * 4));
-
-    *GPIOA_MODER &= ~(0b11 << (10 * 2));			//PA10 - RX - AF7
-    *GPIOA_MODER |=  (0b10 << (10 * 2));
-    *GPIOA_AFRH  &= ~(0xF << ((10 - 8) * 4));
-    *GPIOA_AFRH  |=  (0x7 << ((10 - 8) * 4));
-
-    uint32_t* USART1_BRR = (uint32_t*)(USART1_BASE_ADDR + 0x08);
-    uint32_t* USART1_CR1 = (uint32_t*)(USART1_BASE_ADDR + 0x0C);
+    GPIOA->MODER &= ~(0b11 << (10 * 2));           //PA10 - RX - AF7
+    GPIOA->MODER |=  (0b10 << (10 * 2));
+    GPIOA->AFR[1] &= ~(0xF << ((10 - 8) * 4));
+    GPIOA->AFR[1] |=  (0x7 << ((10 - 8) * 4));
 
     /* Baudrate = 115200, PCLK2 = 16 MHz
        USARTDIV = 16MHz / (16 * 115200) = 8.680 */
-    *USART1_BRR = (8 << 4) | 11;
+    USART1->BRR = (8 << 4) | 11;
 
-    *USART1_CR1 &= ~(1 << 13);
-    *USART1_CR1 = 0;
-    *USART1_CR1 &= ~(1 << 15);   // Oversampling 16
-    *USART1_CR1 &= ~(1 << 12);   // 8-bit data
-    *USART1_CR1 &= ~(1 << 10);   // No parity
-    *USART1_CR1 |=  (1 << 2);    // RE
-    *USART1_CR1 |=  (1 << 3);    // TE
-    *USART1_CR1 |=  (1 << 13);   // UE
+    USART1->CR1 &= ~(1 << 13);
+    USART1->CR1 = 0;
+    USART1->CR1 &= ~(1 << 15);   // Oversampling 16
+    USART1->CR1 &= ~(1 << 12);   // 8-bit data
+    USART1->CR1 &= ~(1 << 10);   // No parity
+    USART1->CR1 |=  (1 << 2);    // RE
+    USART1->CR1 |=  (1 << 3);    // TE
+    USART1->CR1 |=  (1 << 13);   // UE
 }
+
 void UART2_init(void)
 {
-    uint32_t* RCC_AHB1ENR = (uint32_t*)(RCC_BASE_ADDR + 0x30);
-    uint32_t* RCC_APB1ENR = (uint32_t*)(RCC_BASE_ADDR + 0x40);
-
-    *RCC_AHB1ENR |= (1 << 0);     // GPIOA
-    *RCC_APB1ENR |= (1 << 17);    // USART2
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+    RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 
     /* PA2 TX, PA3 RX */
-    uint32_t* GPIOA_MODER = (uint32_t*)(GPIOA_BASE_ADDR + 0x00);
-    uint32_t* GPIOA_AFRL  = (uint32_t*)(GPIOA_BASE_ADDR + 0x20);
+    GPIOA->MODER &= ~((3 << (2*2)) | (3 << (3*2)));
+    GPIOA->MODER |=  ((2 << (2*2)) | (2 << (3*2)));
 
-    *GPIOA_MODER &= ~((3 << (2*2)) | (3 << (3*2)));
-    *GPIOA_MODER |=  ((2 << (2*2)) | (2 << (3*2)));
+    GPIOA->AFR[0] &= ~((0xF << (2*4)) | (0xF << (3*4)));
+    GPIOA->AFR[0] |=  ((7 << (2*4)) | (7 << (3*4)));
 
-    *GPIOA_AFRL  &= ~((0xF << (2*4)) | (0xF << (3*4)));
-    *GPIOA_AFRL  |=  ((7 << (2*4)) | (7 << (3*4)));
+    USART2->BRR = (8 << 4) | 11;   // 115200 @16MHz
 
-    uint32_t* USART2_BRR = (uint32_t*)(USART2_BASE_ADDR + 0x08);
-    uint32_t* USART2_CR1 = (uint32_t*)(USART2_BASE_ADDR + 0x0C);
+    USART2->CR1 = 0;
+    USART2->CR1 |= (1 << 2);   // RE
+    USART2->CR1 |= (1 << 3);   // TE
+    USART2->CR1 |= (1 << 5);   // RXNEIE
+    USART2->CR1 |= (1 << 13);  // UE
 
-    *USART2_BRR = (8 << 4) | 11;   // 115200 @16MHz
-
-    *USART2_CR1 = 0;
-    *USART2_CR1 |= (1 << 2);   // RE
-    *USART2_CR1 |= (1 << 3);   // TE
-    *USART2_CR1 |= (1 << 5);   // RXNEIE
-    *USART2_CR1 |= (1 << 13);  // UE
-
-    NVIC_ISER1[0] = (1 << (USART2_IRQN - 32));
+    NVIC->ISER[1] = (1U << (USART2_IRQN - 32));
 }
 
-
-#define DMA1_BASE_ADDR 0x40026000UL
 
 void UART2_DMA_RX_Init(void)
 {
-    uint32_t* DMA1_S5CR   = (uint32_t*)(DMA1_BASE_ADDR + 0x10 + 0x18 * 5);
-    uint32_t* DMA1_S5NDTR = (uint32_t*)(DMA1_BASE_ADDR + 0x14 + 0x18 * 5);
-    uint32_t* DMA1_S5PAR  = (uint32_t*)(DMA1_BASE_ADDR + 0x18 + 0x18 * 5);
-    uint32_t* DMA1_S5M0AR = (uint32_t*)(DMA1_BASE_ADDR + 0x1C + 0x18 * 5);
+    DMA1_Stream5->CR &= ~DMA_SCR_EN;
+    while (DMA1_Stream5->CR & DMA_SCR_EN);
 
-    *DMA1_S5CR &= ~(1 << 0);   // EN = 0
-    while (*DMA1_S5CR & 1);    // Wait disable
+    DMA1_Stream5->PAR  = (uint32_t)&USART2->DR;
+    DMA1_Stream5->M0AR = (uint32_t)uart2_rx_dma_buf;
+    DMA1_Stream5->NDTR = UART2_RX_BUF_SIZE;
 
-    *DMA1_S5PAR  = USART2_BASE_ADDR + 0x04;  // USART2->DR
-    *DMA1_S5M0AR = (uint32_t)uart2_rx_dma_buf;
-    *DMA1_S5NDTR = UART2_RX_BUF_SIZE;
+    DMA1_Stream5->CR = 0;
+    DMA1_Stream5->CR |= (4 << 25);   // USART2 - CH4
+    DMA1_Stream5->CR |= (0 << 6);    // (PERIPHERAL -> MEMORY)
+    DMA1_Stream5->CR |= (1 << 10);   // MINC = 1
+    DMA1_Stream5->CR |= (0 << 8);    // PSIZE = 8-bit
+    DMA1_Stream5->CR |= (0 << 11);   // MSIZE = 8-bit
+    DMA1_Stream5->CR |= (1 << 8);    // CIRCULAR MODE
+    DMA1_Stream5->CR |= (0 << 16);   // PL = lOW
 
-    *DMA1_S5CR = 0;
-    *DMA1_S5CR |= (4 << 25);   // USART2 - CH4
-    *DMA1_S5CR |= (0 << 6);    // (PERIPHERAL -> MEMORY)
-    *DMA1_S5CR |= (1 << 10);   // MINC = 1
-    *DMA1_S5CR |= (0 << 8);    // PSIZE = 8-bit
-    *DMA1_S5CR |= (0 << 11);   // MSIZE = 8-bit
-    *DMA1_S5CR |= (1 << 8);    // CIRCULAR MODE
-    *DMA1_S5CR |= (0 << 16);   // PL = lOW
-
-    *DMA1_S5CR |= (1 << 0);    // EN = 1
+    DMA1_Stream5->CR |= DMA_SCR_EN;
 }
 
 void USART2_IRQHandler(void)
 {
-    volatile uint32_t* USART2_SR = (volatile uint32_t*)(USART2_BASE_ADDR + 0x00);
-    volatile uint32_t* USART2_DR = (volatile uint32_t*)(USART2_BASE_ADDR + 0x04);
-
-    if ((*USART2_SR >> 5) & 1)   // RXNE
+    if (USART2->SR & USART_SR_RXNE)
     {
-        uint8_t c = (uint8_t)(*USART2_DR & 0xFF);   // Clear RXNE
+        uint8_t c = (uint8_t)(USART2->DR & 0xFF);   // Clear RXNE
         UART_Parse_Byte(c);
     }
 }
 
 void UART1_Transmit(uint8_t data)
 {
-    uint32_t* USART_SR = (uint32_t*)(USART1_BASE_ADDR + 0x00);
-    uint32_t* USART_DR = (uint32_t*)(USART1_BASE_ADDR + 0x04);
-
-    while(((*USART_SR >> 7) & 1) == 0);   // TXE
-    *USART_DR = data;
-    while(((*USART_SR >> 6) & 1) == 0);   // TC
+    while ((USART1->SR & USART_SR_TXE) == 0);   // TXE
+    USART1->DR = data;
+    while ((USART1->SR & USART_SR_TC) == 0);    // TC
 }
+
 void UART2_Transmit(uint8_t data)
 {
-    uint32_t* USART_SR = (uint32_t*)(USART2_BASE_ADDR + 0x00);
-    uint32_t* USART_DR = (uint32_t*)(USART2_BASE_ADDR + 0x04);
-
-    while(((*USART_SR >> 7) & 1) == 0);   // TXE
-    *USART_DR = data;
-    while(((*USART_SR >> 6) & 1) == 0);   // TC
+    while ((USART2->SR & USART_SR_TXE) == 0);   // TXE
+    USART2->DR = data;
+    while ((USART2->SR & USART_SR_TC) == 0);    // TC
 }
 
 uint8_t UART1_Receive(void)
 {
-    uint32_t* USART_SR = (uint32_t*)(USART1_BASE_ADDR + 0x00);
-    uint32_t* USART_DR = (uint32_t*)(USART1_BASE_ADDR + 0x04);
-
-    while(((*USART_SR >> 5) & 1) == 0);
-
-    return (uint8_t)(*USART_DR & 0xFF);
+    while ((USART1->SR & USART_SR_RXNE) == 0);
+    return (uint8_t)(USART1->DR & 0xFF);
 }
+
 uint8_t UART2_Receive(void)
 {
-    uint32_t* USART_SR = (uint32_t*)(USART2_BASE_ADDR + 0x00);
-    uint32_t* USART_DR = (uint32_t*)(USART2_BASE_ADDR + 0x04);
-
-    while(((*USART_SR >> 5) & 1) == 0);
-
-    return (uint8_t)(*USART_DR & 0xFF);
+    while ((USART2->SR & USART_SR_RXNE) == 0);
+    return (uint8_t)(USART2->DR & 0xFF);
 }
+
 void UART1_send_number(int num)
 {
     char buf[12];
@@ -185,6 +139,7 @@ void UART1_send_number(int num)
     while (i--)
         UART1_Transmit(buf[i]);
 }
+
 void UART2_send_number(int num)
 {
     char buf[12];
@@ -204,7 +159,6 @@ void UART2_send_number(int num)
     while (i--)
         UART2_Transmit(buf[i]);
 }
-
 
 void UART1_print_log(char *msg)
 {
@@ -235,6 +189,7 @@ void UART1_send_float(float v)
     if (fp < 10) UART1_Transmit('0');
     UART1_send_number(fp);
 }
+
 void UART2_send_float(float v)
 {
     if (v < 0) {
@@ -251,7 +206,7 @@ void UART2_send_float(float v)
     UART2_send_number(fp);
 }
 
-uint8_t UART_Parse_Speed( uint8_t *buf, uint16_t len, int *speed_out)
+uint8_t UART_Parse_Speed(uint8_t *buf, uint16_t len, int *speed_out)
 {
     if (len < 5) return 0;
 
@@ -317,4 +272,3 @@ void UART_Parse_Byte(uint8_t c)
         cmd_idx = 0;
     }
 }
-

@@ -23,7 +23,7 @@
 static inline void FPU_Enable(void)
 {
     /* Set CP10 and CP11 to Full Access */
-    *((volatile uint32_t*)0xE000ED88) |= (0xFU << 20);
+    SCB_CPACR |= (0xFU << 20);
     __asm volatile("DSB");
     __asm volatile("ISB");
 }
