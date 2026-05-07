@@ -37,7 +37,7 @@ SerialReader::SerialReader(const std::string& device, int baud) {
     ::cfmakeraw(&tty);
 
     tty.c_cc[VMIN]  = 0;
-    tty.c_cc[VTIME] = 10;  // 1s timeout (tenths of seconds)
+    tty.c_cc[VTIME] = 1;   // 100ms timeout (tenths of seconds)
 
     if (::tcsetattr(fd_, TCSANOW, &tty) != 0)
         throw std::runtime_error("tcsetattr: " + std::string(std::strerror(errno)));
