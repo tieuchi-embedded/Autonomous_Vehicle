@@ -10,6 +10,9 @@ typedef enum {
     EGO_STATE    = 3,  // MQ   OLD
     LANE_STATE   = 4,  // MQ   NEW
     CONTROL_CMD  = 5,  // MQ   NEVER
+    DETECTIONS   = 6,  // MQ   NEW
+    BEHAVIOR_CMD = 7,  // MQ   NEVER
+    POSE2D       = 8,  // MQ   OLD
 
     TOPIC_COUNT
 } TopicId;

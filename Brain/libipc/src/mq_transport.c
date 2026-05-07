@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "mq_transport.h"
 #include <errno.h>
 #include <fcntl.h>
@@ -9,7 +10,7 @@ static long read_sys_limit(const char* path, long fallback) {
     FILE* f = fopen(path, "r");
     if (!f) return fallback;
     long v = fallback;
-    fscanf(f, "%ld", &v);
+    if (fscanf(f, "%ld", &v) != 1) v = fallback;
     fclose(f);
     return v;
 }
