@@ -1,0 +1,4 @@
+planning:
+  default_speed_ms: 0.5       # m/s cruise speed
+  stop_distance_m: 0.4        # distance to obstacle before STOP
+  obstacle_conf_thr: 0.6      # min detection confidence to trigger avoid
