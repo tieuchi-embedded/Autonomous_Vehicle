@@ -17,7 +17,7 @@
 #include <vector>
 
 static constexpr int OUT_W = 320;
-static constexpr int OUT_H = 240;
+static constexpr int OUT_H = 180;
 static constexpr int CHANNELS = 3;  // BGR
 
 static std::atomic<bool> g_run{true};

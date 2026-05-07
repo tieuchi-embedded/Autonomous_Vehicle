@@ -3,12 +3,12 @@
 
 namespace lane {
 
-// IPM source trapezoid — calibrated from 320x240 frame of 2p_haveturn.mp4.
+// IPM source trapezoid — calibrated from 320x240 frame of Full_map.mp4.
 // Horizon ~35%, bottom crop ~80% (excludes wheel/chassis).
 // Points: top-left, top-right, bot-right, bot-left (fraction of w/h).
-static constexpr float SRC_TL_X = 0.15f;
-static constexpr float SRC_TR_X = 0.85f;
-static constexpr float SRC_TOP_Y = 0.30f;
+static constexpr float SRC_TL_X = 0.2f;
+static constexpr float SRC_TR_X = 0.8f;
+static constexpr float SRC_TOP_Y = 0.50f;
 
 static constexpr float SRC_BL_X = 0.00f;
 static constexpr float SRC_BR_X = 1.00f;

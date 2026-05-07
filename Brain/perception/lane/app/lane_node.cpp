@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 
     std::printf("lane_node: running%s\n", show ? " (--show)" : "");
 
-    std::vector<uint8_t> buf(sizeof(CameraFrame) + 320 * 240 * 3);
+    std::vector<uint8_t> buf(sizeof(CameraFrame) + 320 * 180 * 3);
     cv::Mat M;
     int M_w = 0, M_h = 0;
     lane::Tracker tracker;
@@ -103,40 +103,31 @@ int main(int argc, char* argv[]) {
                 int H = raw.img_h, W = raw.img_w;
                 float y_bot = (float)(H - 1);
 
-                // Choose reference poly (right preferred, fallback left)
-                float a_ref = raw.ok_right ? raw.ra : raw.la;
+                // Choose reference line (right preferred, fallback left)
                 float b_ref = raw.ok_right ? raw.rb : raw.lb;
                 float c_ref = raw.ok_right ? raw.rc : raw.lc;
 
                 // Evaluate reference lane x at bottom for anchor point
-                float ref_x_bot = a_ref * y_bot * y_bot + b_ref * y_bot + c_ref;
+                float ref_x_bot = b_ref * y_bot + c_ref;
 
-                // LINE 1: curve bám sát lane tham chiếu (xanh lá)
-                std::vector<cv::Point> lane_pts;
-                for (int y = 0; y < H; ++y) {
-                    float yf = (float)y;
-                    int   x  = (int)(a_ref * yf * yf + b_ref * yf + c_ref);
-                    if (x >= 0 && x < W)
-                        lane_pts.push_back({x, y});
-                }
-                if (lane_pts.size() > 1)
-                    cv::polylines(warped_dbg, lane_pts, false,
-                                  raw.src == lane::LaneSource::RIGHT
-                                      ? cv::Scalar(0, 255, 0)   // green = right
-                                      : cv::Scalar(0, 165, 255), // orange = left fallback
-                                  2, cv::LINE_AA);
+                // LINE 1: đường thẳng bám sát lane tham chiếu (xanh lá)
+                int x1_top = (int)(b_ref * 0 + c_ref);
+                int x1_bot = (int)ref_x_bot;
+                cv::line(warped_dbg, {x1_top, 0}, {x1_bot, H - 1},
+                         raw.src == lane::LaneSource::RIGHT
+                             ? cv::Scalar(0, 255, 0)    // green = right
+                             : cv::Scalar(0, 165, 255),  // orange = left fallback
+                         2, cv::LINE_AA);
 
                 // LINE 2: thân xe — đường thẳng đứng giữa ảnh (trắng)
                 cv::line(warped_dbg, {W / 2, 0}, {W / 2, H},
                          {255, 255, 255}, 1, cv::LINE_AA);
 
                 // LINE 3: song song LINE 1, dính vào LINE 2 tại bottom
-                // Offset = car_x - ref_x_bot (shift ngang để line đi qua tâm xe)
                 float shift = (float)(W / 2) - ref_x_bot;
                 std::vector<cv::Point> car_pts;
                 for (int y = 0; y < H; ++y) {
-                    float yf = (float)y;
-                    int   x  = (int)(a_ref * yf * yf + b_ref * yf + c_ref + shift);
+                    int x = (int)(b_ref * y + c_ref + shift);
                     if (x >= 0 && x < W)
                         car_pts.push_back({x, y});
                 }

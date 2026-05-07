@@ -15,9 +15,9 @@ struct DetectResult {
     bool  ok_right = false;
     bool  ok_left  = false;
 
-    // Polynomial coefficients x = a*y^2 + b*y + c for each lane (if detected)
-    float ra = 0, rb = 0, rc = 0;  // right lane poly
-    float la = 0, lb = 0, lc = 0;  // left lane poly
+    // Line coefficients x = b*y + c for each lane (if detected)
+    float rb = 0, rc = 0;  // right lane
+    float lb = 0, lc = 0;  // left lane
 
     // Pixel coords on warped image (debug overlay)
     int   car_x  = 0;

@@ -9,38 +9,30 @@ static constexpr int   MARGIN     = 40;
 static constexpr int   MIN_PIX    = 30;
 static constexpr float PIXEL_TO_M = 0.005f;
 
-// Fit quadratic x = a*y^2 + b*y + c by least squares.
-static bool polyfit2(const std::vector<int>& xs,
-                     const std::vector<int>& ys,
-                     float& a, float& b, float& c) {
+// Fit line x = b*y + c by least squares.
+static bool linefit(const std::vector<int>& xs,
+                    const std::vector<int>& ys,
+                    float& b, float& c) {
     int n = (int)xs.size();
-    if (n < 3) return false;
+    if (n < 2) return false;
 
-    cv::Mat A(n, 3, CV_32F), B(n, 1, CV_32F);
+    cv::Mat A(n, 2, CV_32F), B(n, 1, CV_32F);
     for (int i = 0; i < n; ++i) {
-        float y = (float)ys[i];
-        A.at<float>(i, 0) = y * y;
-        A.at<float>(i, 1) = y;
-        A.at<float>(i, 2) = 1.0f;
+        A.at<float>(i, 0) = (float)ys[i];
+        A.at<float>(i, 1) = 1.0f;
         B.at<float>(i, 0) = (float)xs[i];
     }
     cv::Mat coef;
     if (!cv::solve(A, B, coef, cv::DECOMP_NORMAL | cv::DECOMP_SVD)) return false;
-    a = coef.at<float>(0, 0);
-    b = coef.at<float>(1, 0);
-    c = coef.at<float>(2, 0);
+    b = coef.at<float>(0, 0);
+    c = coef.at<float>(1, 0);
     return true;
 }
 
-// Evaluate polynomial at y.
-static float polyval(float a, float b, float c, float y) {
-    return a * y * y + b * y + c;
-}
+static float lineval(float b, float c, float y) { return b * y + c; }
 
-// Heading error = atan(dx/dy) of polynomial at bottom (tangent vs vertical).
-static float poly_heading(float a, float b, float y) {
-    return std::atan(2.0f * a * y + b);
-}
+// Heading error = atan(slope) — slope of x=b*y+c vs vertical axis.
+static float line_heading(float b) { return std::atan(b); }
 
 DetectResult detect(const cv::Mat& bw) {
     DetectResult r;
@@ -95,42 +87,39 @@ DetectResult detect(const cv::Mat& bw) {
         if (cntR > MIN_PIX) rightx_cur = sumR / cntR;
     }
 
-    float la, lb, lc, ra, rb, rc;
-    bool ok_l = polyfit2(lx, ly, la, lb, lc);
-    bool ok_r = polyfit2(rx, ry, ra, rb, rc);
+    float lb, lc, rb, rc;
+    bool ok_l = linefit(lx, ly, lb, lc);
+    bool ok_r = linefit(rx, ry, rb, rc);
 
     r.ok_right = ok_r;
     r.ok_left  = ok_l;
     r.car_x    = w / 2;
     r.img_h    = h;
     r.img_w    = w;
-    if (ok_r) { r.ra = ra; r.rb = rb; r.rc = rc; }
-    if (ok_l) { r.la = la; r.lb = lb; r.lc = lc; }
+    if (ok_r) { r.rb = rb; r.rc = rc; }
+    if (ok_l) { r.lb = lb; r.lc = lc; }
 
     if (!ok_r && !ok_l) return r;
 
     float y_bot = (float)(h - 1);
 
     if (ok_r) {
-        // Primary: right lane tangent vs car vertical axis
-        r.heading_err_rad = poly_heading(ra, rb, y_bot);
+        r.heading_err_rad = line_heading(rb);
         r.src = LaneSource::RIGHT;
 
-        // Lateral offset: if both lanes found use center, else estimate from right
         if (ok_l) {
-            float cx = 0.5f * (polyval(la, lb, lc, y_bot) + polyval(ra, rb, rc, y_bot));
-            r.lateral_offset_m = ((w * 0.5f) - cx) * PIXEL_TO_M;
+            float cx = 0.5f * (lineval(lb, lc, y_bot) + lineval(rb, rc, y_bot));
+            r.lateral_offset_m = (cx - (w * 0.5f)) * PIXEL_TO_M;
             r.lane_x = (int)cx;
         } else {
-            float rx_bot = polyval(ra, rb, rc, y_bot);
-            r.lateral_offset_m = ((w * 0.5f) - rx_bot) * PIXEL_TO_M;
+            float rx_bot = lineval(rb, rc, y_bot);
+            r.lateral_offset_m = (rx_bot - (w * 0.5f)) * PIXEL_TO_M;
             r.lane_x = (int)rx_bot;
         }
     } else {
-        // Fallback: left lane
-        r.heading_err_rad  = poly_heading(la, lb, y_bot);
-        r.lateral_offset_m = ((w * 0.5f) - polyval(la, lb, lc, y_bot)) * PIXEL_TO_M;
-        r.lane_x = (int)polyval(la, lb, lc, y_bot);
+        r.heading_err_rad  = line_heading(lb);
+        r.lateral_offset_m = (lineval(lb, lc, y_bot) - (w * 0.5f)) * PIXEL_TO_M;
+        r.lane_x = (int)lineval(lb, lc, y_bot);
         r.src = LaneSource::LEFT;
     }
 
