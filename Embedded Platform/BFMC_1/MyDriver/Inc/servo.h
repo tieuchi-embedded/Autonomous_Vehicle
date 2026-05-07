@@ -11,5 +11,7 @@
 void PWM_Init(void);
 void Servo_Speed_Set(uint16_t us);
 void Servo_Steering_Set(uint16_t us);
+void Servo_Speed_Set_RPM(float rpm);
+void Servo_Steering_Set_Deg(float deg);
 
 #endif /* INC_SERVO_H_ */

@@ -1,3 +1,5 @@
 ../MyDriver/Src/servo.c:10:6:PWM_Init	1
 ../MyDriver/Src/servo.c:44:6:Servo_Speed_Set	1
-../MyDriver/Src/servo.c:51:6:Servo_Steering_Set	1
+../MyDriver/Src/servo.c:49:6:Servo_Steering_Set	1
+../MyDriver/Src/servo.c:55:6:Servo_Speed_Set_RPM	3
+../MyDriver/Src/servo.c:64:6:Servo_Steering_Set_Deg	3

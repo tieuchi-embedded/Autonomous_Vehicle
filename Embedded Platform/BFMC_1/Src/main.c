@@ -67,7 +67,6 @@ int main(void)
     Delay_t(2000);
 #endif
 #if 1
-    Servo_Speed_Set(1600);
 #endif
     while (1)
     {
