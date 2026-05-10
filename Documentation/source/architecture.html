@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BFMC Brain — System Architecture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.5; }
+
+  header { background: #1a1d27; border-bottom: 2px solid #3b82f6; padding: 24px 40px; }
+  header h1 { font-size: 1.6rem; color: #fff; font-weight: 700; letter-spacing: 0.5px; }
+  header p { color: #94a3b8; font-size: 0.875rem; margin-top: 4px; }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 32px 40px; }
+
+  /* ── Section titles ── */
+  h2 { font-size: 1.1rem; font-weight: 700; color: #93c5fd; text-transform: uppercase;
+       letter-spacing: 1px; margin: 40px 0 16px; border-left: 3px solid #3b82f6; padding-left: 12px; }
+  h3 { font-size: 0.9rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── Overview pipeline ── */
+  .pipeline { display: flex; align-items: stretch; gap: 0; margin-bottom: 40px; }
+  .pipeline-block {
+    flex: 1; background: #1e2235; border: 1px solid #2d3348; border-radius: 0;
+    padding: 20px 16px; text-align: center; position: relative;
+  }
+  .pipeline-block:first-child { border-radius: 8px 0 0 8px; }
+  .pipeline-block:last-child  { border-radius: 0 8px 8px 0; }
+  .pipeline-block .layer-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 6px; }
+  .pipeline-block .layer-name  { font-size: 1rem; font-weight: 700; color: #fff; }
+  .pipeline-block .layer-nodes { margin-top: 10px; font-size: 0.75rem; color: #94a3b8; }
+  .arrow-right {
+    display: flex; align-items: center; color: #3b82f6; font-size: 1.4rem; padding: 0 4px; flex-shrink: 0;
+  }
+  .pb-perception { border-top: 3px solid #22c55e; }
+  .pb-io         { border-top: 3px solid #f59e0b; }
+  .pb-planning   { border-top: 3px solid #a855f7; }
+  .pb-control    { border-top: 3px solid #ef4444; }
+
+  /* ── Topic pills ── */
+  .topic { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem;
+           font-family: 'Courier New', monospace; font-weight: 600; margin: 2px; }
+  .t-shm  { background: #134e4a; color: #6ee7b7; border: 1px solid #065f46; }
+  .t-mq   { background: #1e3a5f; color: #93c5fd; border: 1px solid #1d4ed8; }
+
+  /* ── Message pills ── */
+  .msg { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 0.7rem;
+         font-family: 'Courier New', monospace; background: #1e2235; color: #e2e8f0; border: 1px solid #2d3348; margin: 2px; }
+
+  /* ── Module grid ── */
+  .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .module-card {
+    background: #1a1d27; border: 1px solid #2d3348; border-radius: 10px; padding: 20px;
+    position: relative; overflow: hidden;
+  }
+  .module-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .card-perception::before { background: #22c55e; }
+  .card-io::before         { background: #f59e0b; }
+  .card-ipc::before        { background: #6366f1; }
+  .card-planning::before   { background: #a855f7; }
+  .card-control::before    { background: #ef4444; }
+
+  .node-name { font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .node-binary { font-family: 'Courier New', monospace; font-size: 0.75rem; color: #64748b; margin-bottom: 12px; }
+  .node-row { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; font-size: 0.78rem; color: #94a3b8; }
+  .node-row-label { color: #64748b; min-width: 52px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; padding-top: 1px; }
+  .node-row-content { flex: 1; }
+
+  /* ── Data flow diagram ── */
+  .flow-wrap { background: #1a1d27; border: 1px solid #2d3348; border-radius: 10px; padding: 28px 24px; overflow-x: auto; }
+  .flow { display: flex; flex-direction: column; gap: 0; min-width: 860px; }
+  .flow-row { display: flex; align-items: center; gap: 0; }
+  .flow-node {
+    border: 1px solid #2d3348; border-radius: 6px; padding: 8px 14px;
+    font-size: 0.78rem; font-weight: 600; text-align: center; white-space: nowrap;
+    min-width: 140px; position: relative;
+  }
+  .fn-io         { background: #2d1f00; color: #fbbf24; border-color: #92400e; }
+  .fn-perception { background: #052e16; color: #86efac; border-color: #166534; }
+  .fn-planning   { background: #2e1065; color: #d8b4fe; border-color: #7e22ce; }
+  .fn-control    { background: #3f0000; color: #fca5a5; border-color: #991b1b; }
+  .fn-hw         { background: #0f172a; color: #94a3b8; border-color: #334155; }
+  .fn-topic      { padding: 4px 10px; min-width: 0; }
+
+  .flow-arrow { color: #3b82f6; font-size: 1.1rem; padding: 0 6px; flex-shrink: 0; }
+  .flow-arrow-down { text-align: center; font-size: 1.1rem; color: #3b82f6; padding: 4px 0; }
+  .flow-col { display: flex; flex-direction: column; align-items: center; }
+  .flow-spacer { flex: 1; }
+  .flow-join { border-left: 2px solid #3b82f6; margin-left: 71px; height: 20px; }
+
+  /* ── Messages table ── */
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  thead th { background: #1e2235; color: #93c5fd; text-align: left; padding: 10px 14px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  tbody tr { border-bottom: 1px solid #1e2235; }
+  tbody tr:hover { background: #1e2235; }
+  tbody td { padding: 10px 14px; vertical-align: top; color: #cbd5e1; }
+  td code { font-family: 'Courier New', monospace; font-size: 0.75rem; color: #86efac; background: #052e16; padding: 1px 5px; border-radius: 3px; }
+  td.field-list { color: #94a3b8; font-family: 'Courier New', monospace; font-size: 0.73rem; line-height: 1.8; }
+
+  /* ── Topics table ── */
+  .topics-wrap { background: #1a1d27; border: 1px solid #2d3348; border-radius: 10px; overflow: hidden; }
+
+  /* ── Legend ── */
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #94a3b8; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  hr.section-sep { border: none; border-top: 1px solid #1e2235; margin: 40px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>BFMC Brain — System Architecture</h1>
+  <p>Autonomous Vehicle 1:10 · Bosch Future Mobility Challenge · Raspberry Pi 5 + STM32F4</p>
+</header>
+
+<div class="container">
+
+  <!-- ══ OVERVIEW ══ -->
+  <h2>Tổng quan hệ thống</h2>
+  <div class="pipeline">
+    <div class="pipeline-block pb-io">
+      <div class="layer-label">Hardware I/O</div>
+      <div class="layer-name">I/O Bridge</div>
+      <div class="layer-nodes">serial_node<br>STM32 ↔ UART</div>
+    </div>
+    <div class="arrow-right">▶</div>
+    <div class="pipeline-block pb-perception">
+      <div class="layer-label">Perception</div>
+      <div class="layer-name">Perception</div>
+      <div class="layer-nodes">state_node · lane_node<br>camera_sim_node</div>
+    </div>
+    <div class="arrow-right">▶</div>
+    <div class="pipeline-block pb-planning">
+      <div class="layer-label">Decision</div>
+      <div class="layer-name">Planning</div>
+      <div class="layer-nodes">planning_node<br>BehaviorManager</div>
+    </div>
+    <div class="arrow-right">▶</div>
+    <div class="pipeline-block pb-control">
+      <div class="layer-label">Actuation</div>
+      <div class="layer-name">Control</div>
+      <div class="layer-nodes">control_node<br>PID · PurePursuit</div>
+    </div>
+    <div class="arrow-right">▶</div>
+    <div class="pipeline-block pb-io">
+      <div class="layer-label">Hardware</div>
+      <div class="layer-name">STM32</div>
+      <div class="layer-nodes">Motor RPM<br>Steering servo</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Perception</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> I/O Bridge</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> Planning</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Control</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div> IPC / libipc</div>
+    <div class="legend-item"><span class="topic t-shm">SHM</span> Shared Memory — latest-wins, zero-copy</div>
+    <div class="legend-item"><span class="topic t-mq">MQ</span> POSIX Message Queue — reliable, queued</div>
+  </div>
+
+  <!-- ══ DATA FLOW ══ -->
+  <h2>Data Flow chi tiết</h2>
+  <div class="flow-wrap">
+    <div class="flow">
+
+      <!-- Row 1: STM32 → serial_node -->
+      <div class="flow-row">
+        <div class="flow-node fn-hw">STM32F4<br><span style="font-size:0.68rem;font-weight:400;color:#64748b">@IMU:yaw,pitch,roll;;<br>@RPM:rpm;;</span></div>
+        <div class="flow-arrow">──UART──▶</div>
+        <div class="flow-node fn-io">serial_node</div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node fn-topic t-mq"><span class="topic t-mq">MQ</span> SERIAL</div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node fn-perception">state_node</div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node fn-topic t-mq"><span class="topic t-mq">MQ</span> EGO_STATE</div>
+        <div class="flow-arrow" style="color:#a855f7">──▶</div>
+        <div class="flow-node fn-planning" style="white-space:nowrap">planning_node</div>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <!-- Row 2: camera_sim → lane_node -->
+      <div class="flow-row">
+        <div class="flow-node fn-hw">MP4 Video<br><span style="font-size:0.68rem;font-weight:400;color:#64748b">320×180 BGR</span></div>
+        <div class="flow-arrow">──────▶</div>
+        <div class="flow-node fn-perception">camera_sim_node</div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node fn-topic t-shm"><span class="topic t-shm">SHM</span> CAMERA_FRAME</div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node fn-perception">lane_node<br><span style="font-size:0.68rem;font-weight:400;color:#64748b">IPM→HLS→SlideWin→Polyfit</span></div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node fn-topic t-mq"><span class="topic t-mq">MQ</span> LANE_STATE</div>
+        <div class="flow-arrow" style="color:#a855f7">──▶</div>
+        <div class="flow-node fn-planning" style="white-space:nowrap">planning_node</div>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <!-- Row 3: planning → control → serial -->
+      <div class="flow-row">
+        <div style="min-width:760px"></div>
+        <div class="flow-node fn-planning">planning_node</div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node fn-topic t-mq"><span class="topic t-mq">MQ</span> BEHAVIOR_CMD</div>
+        <div class="flow-arrow" style="color:#ef4444">──▶</div>
+        <div class="flow-node fn-control">control_node<br><span style="font-size:0.68rem;font-weight:400;color:#64748b">PID speed · PurePursuit</span></div>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <!-- Row 4: control → CONTROL_CMD → serial_node → STM32 -->
+      <div class="flow-row">
+        <div style="min-width:960px"></div>
+        <div class="flow-node fn-control">control_node<br>/ manual_node</div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node fn-topic t-mq"><span class="topic t-mq">MQ</span> CONTROL_CMD</div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node fn-io">serial_node</div>
+        <div class="flow-arrow">──UART──▶</div>
+        <div class="flow-node fn-hw">STM32F4<br><span style="font-size:0.68rem;font-weight:400;color:#64748b">#RPM:val;;<br>#STR:val;;</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ IPC / LIBIPC ══ -->
+  <h2>IPC Layer — libipc</h2>
+  <div class="module-grid">
+    <div class="module-card card-ipc">
+      <div class="node-name">libipc</div>
+      <div class="node-binary">liblibipc.a / liblibipc.so</div>
+      <div class="node-row">
+        <span class="node-row-label">Transport</span>
+        <span class="node-row-content">
+          <span class="topic t-shm">SHM</span> Shared Memory — latest-wins, ring buffer, atomic seq counter, zero-copy<br>
+          <span class="topic t-mq">MQ</span> POSIX MQ — queued, depth-clamped theo <code style="font-size:0.72rem">/proc/sys/fs/mqueue/msg_max</code>
+        </span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">API (C)</span>
+        <span class="node-row-content" style="font-family:monospace;font-size:0.73rem;line-height:1.8;color:#86efac">
+          ipc_publish_init()<br>
+          ipc_publish()<br>
+          ipc_publish_close()<br>
+          ipc_subscribe_init()<br>
+          ipc_subscribe()<br>
+          ipc_subscribe_close()
+        </span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">C++ wrap</span>
+        <span class="node-row-content" style="font-family:monospace;font-size:0.73rem;color:#86efac">Publisher&lt;T&gt; / Subscriber&lt;T&gt;</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Python</span>
+        <span class="node-row-content" style="font-family:monospace;font-size:0.73rem;color:#86efac">ipc.py + ipc_schema.py (ctypes)</span>
+      </div>
+    </div>
+
+    <div class="module-card card-ipc">
+      <div class="node-name">Topics &amp; Transport map</div>
+      <div class="node-binary">libipc/include/ipc/topic.h</div>
+      <table style="margin-top:8px">
+        <thead><tr><th>ID</th><th>Topic</th><th>Transport</th><th>Drop Policy</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><span class="topic t-shm">CAMERA_FRAME</span></td><td>SHM</td><td>NEW</td></tr>
+          <tr><td>2</td><td><span class="topic t-mq">SERIAL</span></td><td>MQ</td><td>OLD</td></tr>
+          <tr><td>3</td><td><span class="topic t-mq">EGO_STATE</span></td><td>MQ</td><td>OLD</td></tr>
+          <tr><td>4</td><td><span class="topic t-mq">LANE_STATE</span></td><td>MQ</td><td>OLD</td></tr>
+          <tr><td>5</td><td><span class="topic t-mq">CONTROL_CMD</span></td><td>MQ</td><td>NEW</td></tr>
+          <tr><td>6</td><td><span class="topic t-mq">DETECTIONS</span></td><td>MQ</td><td>OLD</td></tr>
+          <tr><td>7</td><td><span class="topic t-mq">BEHAVIOR_CMD</span></td><td>MQ</td><td>OLD</td></tr>
+          <tr><td>8</td><td><span class="topic t-mq">POSE2D</span></td><td>MQ</td><td>OLD</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ MESSAGES ══ -->
+  <h2>Message Definitions — messages/</h2>
+  <div class="topics-wrap">
+    <table>
+      <thead>
+        <tr><th>Struct</th><th>File</th><th>Fields</th><th>Published by</th><th>Consumed by</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>SerialData</code></td>
+          <td><code>serial_data.h</code></td>
+          <td class="field-list">yaw, pitch, roll (deg)<br>wx, wy, wz (rad/s)<br>ax, ay, az (m/s²)<br>rpm</td>
+          <td>serial_node</td>
+          <td>state_node</td>
+        </tr>
+        <tr>
+          <td><code>EgoState</code></td>
+          <td><code>ego_state.h</code></td>
+          <td class="field-list">time_ms<br>angle (deg, = yaw)<br>speed (cm/s)</td>
+          <td>state_node</td>
+          <td>planning_node<br>control_node</td>
+        </tr>
+        <tr>
+          <td><code>CameraFrame</code></td>
+          <td><code>camera_frame.h</code></td>
+          <td class="field-list">width, height, stride<br>fmt (BGR)<br>data_size<br>data[…] (pixel buffer)</td>
+          <td>camera_sim_node</td>
+          <td>lane_node</td>
+        </tr>
+        <tr>
+          <td><code>LaneState</code></td>
+          <td><code>lane_state.h</code></td>
+          <td class="field-list">heading_err_rad<br>lateral_offset_m (+right)</td>
+          <td>lane_node</td>
+          <td>planning_node</td>
+        </tr>
+        <tr>
+          <td><code>BehaviorCmd</code></td>
+          <td><code>behavior_cmd.h</code></td>
+          <td class="field-list">target_speed (m/s)<br>target_heading (deg)<br>mode (IDLE/LANE_FOLLOW/STOP/…)</td>
+          <td>planning_node</td>
+          <td>control_node</td>
+        </tr>
+        <tr>
+          <td><code>ControlCmd</code></td>
+          <td><code>control_cmd.h</code></td>
+          <td class="field-list">rpm [−300, +300]<br>steer_deg [−30, +30]</td>
+          <td>control_node<br>manual_node</td>
+          <td>serial_node → STM32</td>
+        </tr>
+        <tr>
+          <td><code>Pose2D</code></td>
+          <td><code>pose2d.h</code></td>
+          <td class="field-list">x, y (m)<br>heading_rad</td>
+          <td>localization_node<br><em>(stub)</em></td>
+          <td>planning_node<br><em>(future)</em></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══ MODULES ══ -->
+  <h2>I/O Bridge — io/serial_bridge</h2>
+  <div class="module-grid">
+    <div class="module-card card-io">
+      <div class="node-name">serial_node</div>
+      <div class="node-binary">bin/serial_node</div>
+      <div class="node-row">
+        <span class="node-row-label">Sub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> CONTROL_CMD</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Pub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> SERIAL</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">UART</span>
+        <span class="node-row-content"><code>/dev/ttyACM0</code> · 115200 baud · full-duplex</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Uplink</span>
+        <span class="node-row-content">parse <code>@IMU:yaw,pitch,roll;;</code> · <code>@RPM:rpm;;</code> → pub SERIAL</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Downlink</span>
+        <span class="node-row-content">poll CONTROL_CMD → write <code>#RPM:val;;</code> <code>#STR:val;;</code></span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Safety</span>
+        <span class="node-row-content">SIGTERM → gửi rpm=0, steer=0 trước khi thoát</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>Perception — perception/</h2>
+  <div class="module-grid">
+
+    <div class="module-card card-perception">
+      <div class="node-name">camera_sim_node</div>
+      <div class="node-binary">bin/camera_sim_node &lt;video.mp4&gt; [fps]</div>
+      <div class="node-row">
+        <span class="node-row-label">Input</span>
+        <span class="node-row-content">MP4 file (OpenCV VideoCapture), loop on EOF</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Output</span>
+        <span class="node-row-content"><span class="topic t-shm">SHM</span> CAMERA_FRAME — 320×180 BGR</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Note</span>
+        <span class="node-row-content">Thay bằng <code>camera_node</code> khi có camera thật (libcamera)</span>
+      </div>
+    </div>
+
+    <div class="module-card card-perception">
+      <div class="node-name">state_node</div>
+      <div class="node-binary">bin/state_node</div>
+      <div class="node-row">
+        <span class="node-row-label">Sub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> SERIAL (SerialData)</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Pub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> EGO_STATE (EgoState)</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Logic</span>
+        <span class="node-row-content">
+          angle = yaw (pass-through)<br>
+          speed = <code>(rpm / 7) × 2π × 6.5 / 60</code> cm/s<br>
+          <em style="font-size:0.7rem;color:#64748b">gear ratio 7:1, wheel radius 6.5 cm</em>
+        </span>
+      </div>
+    </div>
+
+    <div class="module-card card-perception" style="grid-column: span 1">
+      <div class="node-name">lane_node</div>
+      <div class="node-binary">bin/lane_node [--show]</div>
+      <div class="node-row">
+        <span class="node-row-label">Sub</span>
+        <span class="node-row-content"><span class="topic t-shm">SHM</span> CAMERA_FRAME</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Pub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> LANE_STATE</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Pipeline</span>
+        <span class="node-row-content">
+          1. <strong>IPM warp</strong> — bird's-eye view<br>
+          &nbsp;&nbsp;&nbsp;src trapezoid: TL=0.15, TR=0.85, top_y=0.30<br>
+          2. <strong>HLS binary</strong> — L channel &gt; 200 (white lines)<br>
+          3. <strong>Sliding window</strong> — 9 windows, histogram seed<br>
+          4. <strong>Polyfit bậc 2</strong> — x = b·y + c<br>
+          5. <strong>EMA tracker</strong> — α=0.7, ưu tiên right lane, fallback left
+        </span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Output</span>
+        <span class="node-row-content">
+          <code>heading_err_rad</code> — góc tiếp tuyến poly vs trục xe<br>
+          <code>lateral_offset_m</code> — khoảng cách ngang tâm xe vs tâm lane
+        </span>
+      </div>
+    </div>
+
+    <div class="module-card card-perception" style="opacity:0.6">
+      <div class="node-name">localization_node <span style="font-size:0.7rem;color:#64748b">(stub)</span></div>
+      <div class="node-binary">bin/localization_node</div>
+      <div class="node-row">
+        <span class="node-row-label">Sub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> EGO_STATE</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Pub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> POSE2D</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Plan</span>
+        <span class="node-row-content">Dead reckoning — không có GPS hardware</span>
+      </div>
+    </div>
+
+    <div class="module-card card-perception" style="opacity:0.6">
+      <div class="node-name">object_detection_node <span style="font-size:0.7rem;color:#64748b">(stub)</span></div>
+      <div class="node-binary">object_detection_node.py</div>
+      <div class="node-row">
+        <span class="node-row-label">Sub</span>
+        <span class="node-row-content"><span class="topic t-shm">SHM</span> CAMERA_FRAME</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Pub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> DETECTIONS</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Plan</span>
+        <span class="node-row-content">YOLOv8n ONNX — chưa implement</span>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Planning — planning/</h2>
+  <div class="module-grid">
+    <div class="module-card card-planning">
+      <div class="node-name">planning_node</div>
+      <div class="node-binary">bin/planning_node</div>
+      <div class="node-row">
+        <span class="node-row-label">Sub</span>
+        <span class="node-row-content">
+          <span class="topic t-mq">MQ</span> LANE_STATE<br>
+          <span class="topic t-mq">MQ</span> EGO_STATE
+        </span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Pub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> BEHAVIOR_CMD</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Modes</span>
+        <span class="node-row-content">
+          <span class="msg">IDLE</span>
+          <span class="msg">LANE_FOLLOW</span>
+          <span class="msg">STOP</span>
+          <span class="msg">OBSTACLE_AVOID</span>
+        </span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Logic</span>
+        <span class="node-row-content">
+          target_heading = heading_err_rad → deg<br>
+          target_speed = 0.5 m/s (default)<br>
+          <em style="font-size:0.7rem;color:#64748b">config: planning.yaml</em>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <h2>Control — control/</h2>
+  <div class="module-grid">
+
+    <div class="module-card card-control">
+      <div class="node-name">control_node</div>
+      <div class="node-binary">bin/control_node</div>
+      <div class="node-row">
+        <span class="node-row-label">Sub</span>
+        <span class="node-row-content">
+          <span class="topic t-mq">MQ</span> BEHAVIOR_CMD<br>
+          <span class="topic t-mq">MQ</span> EGO_STATE
+        </span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Pub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> CONTROL_CMD</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Rate</span>
+        <span class="node-row-content">~50 Hz (CLOCK_MONOTONIC dt)</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Speed</span>
+        <span class="node-row-content">
+          <strong>PID Controller</strong><br>
+          Kp=10.0, Ki=0.5, Kd=0.1<br>
+          input: target_speed (m/s) vs speed_cms<br>
+          output: rpm ∈ [−300, +300]
+        </span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Lateral</span>
+        <span class="node-row-content">
+          <strong>Pure Pursuit</strong> (lookahead 0.3 m)<br>
+          input: target_heading (deg)<br>
+          output: steer_deg ∈ [−30, +30]
+        </span>
+      </div>
+    </div>
+
+    <div class="module-card card-control">
+      <div class="node-name">manual_node</div>
+      <div class="node-binary">bin/manual_node</div>
+      <div class="node-row">
+        <span class="node-row-label">Pub</span>
+        <span class="node-row-content"><span class="topic t-mq">MQ</span> CONTROL_CMD</span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Keys</span>
+        <span class="node-row-content" style="font-family:monospace;font-size:0.75rem;line-height:1.8">
+          w/s — RPM ±step<br>
+          a/d — steer ±step<br>
+          space — full stop<br>
+          x — center steer<br>
+          q — quit
+        </span>
+      </div>
+      <div class="node-row">
+        <span class="node-row-label">Config</span>
+        <span class="node-row-content">env: MANUAL_RPM_STEP, MANUAL_RPM_MAX,<br>MANUAL_STEER_STEP, MANUAL_STEER_MAX</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ CONFIG ══ -->
+  <h2>Configuration — config/</h2>
+  <div class="module-grid">
+    <div class="module-card card-ipc">
+      <div class="node-name">control.yaml</div>
+      <div style="margin-top:8px;font-family:monospace;font-size:0.75rem;line-height:1.9;color:#86efac">
+        lateral.lookahead_m = 0.30<br>
+        lateral.max_steer_deg = 25.0<br>
+        speed.kp = 10.0<br>
+        speed.ki = 0.5<br>
+        speed.kd = 0.1<br>
+        speed.max_rpm = 300.0
+      </div>
+    </div>
+    <div class="module-card card-ipc">
+      <div class="node-name">planning.yaml</div>
+      <div style="margin-top:8px;font-family:monospace;font-size:0.75rem;line-height:1.9;color:#86efac">
+        default_speed_ms = 0.5<br>
+        stop_distance_m = 0.4<br>
+        obstacle_conf_thr = 0.6
+      </div>
+    </div>
+    <div class="module-card card-ipc">
+      <div class="node-name">Các file còn lại</div>
+      <div style="margin-top:8px;font-size:0.78rem;color:#64748b;line-height:1.8">
+        camera.yaml — chưa dùng<br>
+        serial.yaml — device/baud configurable<br>
+        lane.yaml — IPM params (chưa dùng, hardcode)<br>
+        state.yaml — gear ratio, wheel radius<br>
+        localization.yaml — stub
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-sep">
+  <p style="color:#334155;font-size:0.75rem;text-align:center;padding-bottom:32px">
+    BFMC Brain · generated 2026-05-10 · Autonomous Vehicle 1:10 · tieuchi.embedded
+  </p>
+
+</div>
+</body>
+</html>
