@@ -44,13 +44,27 @@ void PWM_Init(void)
 void Servo_Speed_Set(uint16_t us)
 {
     TIM2->CCR1 = us;
-    UART2_print_log("@speed:");
-    UART2_send_float(us);
 }
 
 void Servo_Steering_Set(uint16_t us)
 {
     TIM2->CCR2 = us;
-    UART2_print_log("@steer:");
-    UART2_send_float(us);
+}
+
+// rpm: -500..+500, maps to 1000..2000 us (0 -> 1500)
+void Servo_Speed_Set_RPM(float rpm)
+{
+    int pwm = 1500 - (int)rpm;
+    if (pwm < 1000) pwm = 1000;
+    if (pwm > 2000) pwm = 2000;
+    Servo_Speed_Set((uint16_t)pwm);
+}
+
+// deg: -40..+40, maps to 1100..1900 us (0 -> 1500, 1 deg = 10 us)
+void Servo_Steering_Set_Deg(float deg)
+{
+    int pwm = 1500 + (int)(deg * 10.0f);
+    if (pwm < 1100) pwm = 1100;
+    if (pwm > 1900) pwm = 1900;
+    Servo_Steering_Set((uint16_t)pwm);
 }

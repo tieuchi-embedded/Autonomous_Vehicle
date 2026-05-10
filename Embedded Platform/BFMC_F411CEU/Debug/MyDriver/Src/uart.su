@@ -14,4 +14,4 @@
 ../MyDriver/Src/uart.c:193:6:UART2_send_float	24	static
 ../MyDriver/Src/uart.c:209:9:UART_Parse_Speed	40	static
 ../MyDriver/Src/uart.c:232:6:UART_Parse_Command	24	static
-../MyDriver/Src/uart.c:251:6:UART_Parse_Byte	16	static
+../MyDriver/Src/uart.c:250:6:UART_Parse_Byte	16	static

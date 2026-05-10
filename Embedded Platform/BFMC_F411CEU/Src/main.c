@@ -50,19 +50,19 @@ int main(void)
 
     Watchdog_Init();
     Servo_Speed_Set(1500);
-    Delay_t(2000);
+//    Delay_t(2000);
 
 
     while (1)
     {
-        Servo_Speed_Set(1700);
-        Delay_t(1000);
-        Servo_Speed_Set(1500);
-        Delay_t(1000);
-        Servo_Speed_Set(1300);
-        Delay_t(1000);
-        Servo_Speed_Set(1500);
-        Delay_t(1000);
+//        Servo_Speed_Set(1700);
+//        Delay_t(1000);
+//        Servo_Speed_Set(1500);
+//        Delay_t(1000);
+//        Servo_Speed_Set(1300);
+//        Delay_t(1000);
+//        Servo_Speed_Set(1500);
+//        Delay_t(1000);
 
 //        if (imu_available) {
 //            int16_t ex, ey, ez;
@@ -86,11 +86,11 @@ int main(void)
 //            IMU_HealthCheck(ex, ey, ez);
 //        }
 //
-//        float deg = AS5600_ReadAngleDeg();
-//        UART2_print_log("@RPM:");
-//        UART2_send_float(deg);
-//        UART2_print_log(";;");
-//        UART2_print_log("\r\n");
+        float deg = AS5600_ReadAngleDeg();
+        UART2_print_log("@RPM:");
+        UART2_send_float(deg);
+        UART2_print_log(";;");
+        UART2_print_log("\r\n");
 
         Feed_WD();
 

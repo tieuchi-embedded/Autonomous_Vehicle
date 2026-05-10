@@ -23,9 +23,12 @@ void I2C1_Master_Init()
     GPIOB->AFR[1] &= ~(0xF<<(1*4));
     GPIOB->AFR[1] |= (0x4<<(1*4));
 
+    I2C1->CR1 |= I2C_CR1_SWRST;   // reset peripheral
+    I2C1->CR1 &= ~I2C_CR1_SWRST;
+
     I2C1->CR1 &= ~I2C_CR1_PE;
     I2C1->CR2 = 16;         // PCLK1=16MHz
-    I2C1->CCR = 80;         // 100kHz
+    I2C1->CCR = 80;        // 100kHz: 16MHz / (2 * 100kHz) = 80... standard mode: 16MHz/100kHz = 160
     I2C1->TRISE = 17;       // 1000ns @16MHz
     I2C1->CR1 |= I2C_CR1_ACK;
     I2C1->CR1 |= I2C_CR1_PE;
