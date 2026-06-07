@@ -1,0 +1,4 @@
+../MyDriver/Src/i2c.c:19:12:i2c_wait_flag	4
+../MyDriver/Src/i2c.c:29:6:I2C1_Master_Init	1
+../MyDriver/Src/i2c.c:51:6:I2C1_WriteReg	3
+../MyDriver/Src/i2c.c:75:6:I2C1_ReadMulti	5
