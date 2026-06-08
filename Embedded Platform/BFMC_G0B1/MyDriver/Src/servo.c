@@ -13,32 +13,38 @@ void PWM_Init(void)
     RCC->IOPENR  |= RCC_IOPENR_GPIOAEN;
     RCC->APBENR1 |= RCC_APBENR1_TIM2EN;
 
-    GPIOA->MODER &= ~(0b11 << (0 * 2));  // clear mode PA0
-    GPIOA->MODER |=  (0b10 << (0 * 2));  // set AF mode
+    // GPIO config giữ nguyên...
+    GPIOA->MODER &= ~(0b11 << (0 * 2));
+    GPIOA->MODER |=  (0b10 << (0 * 2));
     GPIOA->AFR[0] &= ~(0xF << (0 * 4));
-    GPIOA->AFR[0] |=  (0x2 << (0 * 4)); // AF2 (TIM2_CH1)
+    GPIOA->AFR[0] |=  (0x2 << (0 * 4));
 
     GPIOA->MODER &= ~(0b11 << (1 * 2));
     GPIOA->MODER |=  (0b10 << (1 * 2));
     GPIOA->AFR[0] &= ~(0xF << (1 * 4));
-    GPIOA->AFR[0] |=  (0x2 << (1 * 4)); // AF2 (TIM2_CH2)
+    GPIOA->AFR[0] |=  (0x2 << (1 * 4));
 
-    TIM2->PSC = 16 - 1;     // 16MHz/16 = 1MHz tick
-    TIM2->ARR = 20000 - 1;  // chu kỳ 20ms => PWM 50Hz
-    TIM2->CCR1 = 1500;      // Servo speed stop (1.5 ms)
-    TIM2->CCR2 = 1500;      // Servo steering center
+    // Timer config
+    TIM2->CR1 = 0;              // reset trước
+    TIM2->PSC = 16 - 1;
+    TIM2->ARR = 20000 - 1;
 
-    TIM2->CCMR1 &= ~((0xFF << 0) | (0xFF << 8));
-    // CH1
-    TIM2->CCMR1 |= (6 << 4) | (1 << 3);   // OC1M, OC1PE
-    // CH2
-    TIM2->CCMR1 |= (6 << 12) | (1 << 11); // OC2M, OC2PE
+    // CCMR: clear hẳn rồi mới set
+    TIM2->CCMR1 = 0;
+    TIM2->CCMR1 |= (6 << 4)  | (1 << 3);    // CH1: PWM1, OC1PE
+    TIM2->CCMR1 |= (6 << 12) | (1 << 11);   // CH2: PWM1, OC2PE
 
-    TIM2->CCER |= (1 << 0);   // CC1E
-    TIM2->CCER |= (1 << 4);   // CC2E
+    TIM2->CCER = 0;
+    TIM2->CCER |= (1 << 0);    // CC1E
+    TIM2->CCER |= (1 << 4);    // CC2E
 
-    TIM2->EGR = 1;             // UG=1
+    TIM2->CCR1 = 1500;
+    TIM2->CCR2 = 1500;
 
+    TIM2->EGR  = 1;             // UG: force update, load shadow registers
+    TIM2->SR  &= ~1;            // clear UIF
+
+    TIM2->CR1 |= TIM_CR1_ARPE; // ← THÊM: ARR dùng preload
     TIM2->CR1 |= TIM_CR1_CEN;
 }
 

@@ -61,6 +61,7 @@ void UART2_init(void)
     USART2->CR1 |= (1 << 3);   // TE
     USART2->CR1 |= (1 << 5);   // RXNEIE
     USART2->CR1 |= (1 << 0);   // UE
+    USART2->CR3 &= ~(1U << 0); // disable error interrupt
 
     NVIC->ISER[0] = (1U << USART2_IRQn);
 }
@@ -72,7 +73,7 @@ void UART2_DMA_RX_Init(void)
        DMA-based UART RX becomes necessary. */
 }
 
-void USART2_IRQHandler(void)
+void USART2_LPUART2_IRQHandler(void)
 {
     if (USART2->ISR & USART_ISR_RXNE_RXFNE)
     {
@@ -90,9 +91,11 @@ void UART1_Transmit(uint8_t data)
 
 void UART2_Transmit(uint8_t data)
 {
+	NVIC->ICER[0] = (1U << USART2_IRQn);
     while ((USART2->ISR & USART_ISR_TXE_TXFNF) == 0);
     USART2->TDR = data;
     while ((USART2->ISR & USART_ISR_TC) == 0);
+    NVIC->ISER[0] = (1U << USART2_IRQn);
 }
 
 uint8_t UART1_Receive(void)

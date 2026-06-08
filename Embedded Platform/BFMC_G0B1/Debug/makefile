@@ -60,8 +60,8 @@ all: main-build
 main-build: BFMC_G0B1.elf secondary-outputs
 
 # Tool invocations
-BFMC_G0B1.elf BFMC_G0B1.map: $(OBJS) $(USER_OBJS) /home/tieuchi/Desktop/Autonomous_Vehicle/Embedded\ Platform/BFMC_G0B1/STM32G0B1RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "BFMC_G0B1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"/home/tieuchi/Desktop/Autonomous_Vehicle/Embedded Platform/BFMC_G0B1/STM32G0B1RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BFMC_G0B1.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+BFMC_G0B1.elf BFMC_G0B1.map: $(OBJS) $(USER_OBJS) D:\BFMC\Autonomous_Vehicle\Embedded\ Platform\BFMC_G0B1\STM32G0B1RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "BFMC_G0B1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"D:\BFMC\Autonomous_Vehicle\Embedded Platform\BFMC_G0B1\STM32G0B1RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BFMC_G0B1.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
