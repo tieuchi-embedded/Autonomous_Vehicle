@@ -3,8 +3,8 @@
 
 typedef struct {
     MessageHeader h;
-    float   target_speed;    // m/s, 0 = stop
-    float   target_heading;  // degrees, relative to current yaw
-    uint8_t mode;            // 0=idle, 1=lane_follow, 2=stop, 3=obstacle_avoid
+    float   target_speed;     // m/s, 0 = stop
+    float   target_steer_deg; // degrees, +right — Stanley setpoint from lane tracking
+    uint8_t mode;             // 0=idle, 1=lane_follow, 2=stop, 3=obstacle_avoid
     uint8_t _pad[3];
 } BehaviorCmd;

@@ -1,5 +1,4 @@
 add_library(control_core STATIC
-    src/lateral_controller.cpp
     src/speed_controller.cpp
 )
 

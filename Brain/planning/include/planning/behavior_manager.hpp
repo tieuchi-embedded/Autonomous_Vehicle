@@ -21,8 +21,9 @@ public:
 
 private:
     BehaviorMode m_mode{BehaviorMode::LANE_FOLLOW};
-    float m_target_speed{0.5f};
-    float m_target_heading{0.0f};
+    float m_target_speed{0.4f};
+    float m_target_steer_deg{0.0f};
+    float m_speed_ms{0.0f};  // current speed, from EgoState — needed by Stanley
 };
 
 } // namespace planning
