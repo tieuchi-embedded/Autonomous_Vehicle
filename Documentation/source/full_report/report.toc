@@ -1,0 +1,19 @@
+\contentsline {section}{\numberline {1}Hardware}{2}{section.1}%
+\contentsline {section}{\numberline {2}Software}{6}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Architecture}{6}{subsection.2.1}%
+\contentsline {subsubsection}{\numberline {2.1.1}Embedded Platform}{6}{subsubsection.2.1.1}%
+\contentsline {subsubsection}{\numberline {2.1.2}Brain}{6}{subsubsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.2}Embedded Platform}{6}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}Peripheral}{6}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.2}Sensor}{8}{subsubsection.2.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.3}Actuator}{10}{subsubsection.2.2.3}%
+\contentsline {subsection}{\numberline {2.3}Brain}{11}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Module Communication}{11}{subsubsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.4}IO}{11}{subsection.2.4}%
+\contentsline {subsubsection}{\numberline {2.4.1}Perception}{11}{subsubsection.2.4.1}%
+\contentsline {subsubsection}{\numberline {2.4.2}Localization}{12}{subsubsection.2.4.2}%
+\contentsline {subsubsection}{\numberline {2.4.3}Planning}{12}{subsubsection.2.4.3}%
+\contentsline {subsubsection}{\numberline {2.4.4}Control}{12}{subsubsection.2.4.4}%
+\contentsline {subsection}{\numberline {2.5}Monitor}{12}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}Simulation}{12}{subsection.2.6}%
+\contentsline {section}{\numberline {3}Source \& Description}{13}{section.3}%
