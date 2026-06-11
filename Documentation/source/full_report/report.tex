@@ -8,6 +8,8 @@
 \usepackage{hyperref}
 \usepackage{parskip}
 \usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{multirow}
 \usepackage{graphicx}
 \usepackage{float}
 \graphicspath{{img/}}
@@ -194,68 +196,44 @@ Role           & Controls front wheel steering angle \\
   lbl/.style={font=\footnotesize, fill=white, inner sep=1pt}
 ]
 
-%
-%  Layout (grid):
-%
-%  row  3 :                    [Speed Servo]
-%  row  2 :                    [Steer Servo]    ACTUATOR
-%  row  1 :  [IMU]     [NUCLEO]              [Raspberry Pi 5]
-%  row  0 :  [Encoder]
-%  row -1 :                    [Camera frame]   Camera
-%
-%  col:  0         3           6              9
-
-% --- SENSOR ---
-\node[node] (imu)     at (0,  1.0) {IMU};
-\node[node] (encoder) at (0,  0.0) {Encoder};
+% --- SENSOR (left, top row) ---
+\node[node] (imu)     at (0.8,  2.5) {IMU};
+\node[node] (encoder) at (3.5,  2.5) {Encoder};
 \node[group, fit=(imu)(encoder)] (sen_box) {};
 \node[grplbl, above=5pt of sen_box] {SENSOR};
 
-% --- NUCLEO ---
+% --- NUCLEO (center, bottom row) ---
 \node[node, minimum width=2.8cm, minimum height=1.0cm]
-      (nucleo) at (4.5, 0.5) {NUCLEO};
+      (nucleo) at (5.5, 0.0) {NUCLEO};
 
-% --- ACTUATOR ---
+% --- ACTUATOR (right, top row) ---
 \node[node] (speed) at (8.5, 2.5) {Speed Servo};
-\node[node] (steer) at (8.5, 1.5) {Steer Servo};
+\node[node] (steer) at (11.0, 2.5) {Steer Servo};
 \node[group, fit=(speed)(steer)] (act_box) {};
 \node[grplbl, above=5pt of act_box] {ACTUATOR};
 
-% --- Raspberry Pi 5 ---
-\node[node, minimum width=3.0cm] (rpi) at (8.5, 0.5) {Raspberry Pi 5};
-
-% --- Camera ---
-\node[node] (camera) at (8.5, -1.0) {Camera frame};
-\node[group, fit=(camera)] (cam_box) {};
-\node[grplbl, above=5pt of cam_box] {Camera};
-
 % ---- Connections ----
 
-% IMU → NUCLEO (I2C), top wire
-\draw[arr] (imu.east) -- node[lbl, above] {I2C} (nucleo.west |- imu);
+% IMU → NUCLEO: down then right into nucleo top
+\draw[arr] (imu.south) |- ([yshift=-8pt]nucleo.west);
 
-% Encoder → NUCLEO (I2C), bottom wire
-\draw[arr] (encoder.east) -- node[lbl, above] {I2C} (nucleo.west |- encoder);
+% Encoder → NUCLEO: down then right into nucleo bottom
+\draw[arr] (encoder.south) |- ([yshift=8pt]nucleo.west);
 
-% NUCLEO → Speed Servo (PWM)
-\draw[arr] (nucleo.north) -- ++(0, 1.2) -| node[lbl, pos=0.25, above] {PWM} (speed.west);
+% NUCLEO → Speed Servo (right then up, exits nucleo.east at top)
+\draw[arr] ([yshift=8pt]nucleo.east) -| (speed.south);
 
-% NUCLEO → Steer Servo (PWM)
-\draw[arr] (nucleo.north) -- ++(0, 0.6) -| (steer.west);
+% NUCLEO → Steer Servo (right then up, exits nucleo.east at bottom)
+\draw[arr] ([yshift=-8pt]nucleo.east) -| (steer.south);
 
-% NUCLEO → RPi TX (UART)
-\draw[arr] ([yshift= 8pt]nucleo.east) -- node[lbl, above] {TX 115200 \ @IMU, @RPM}
-           ([yshift= 8pt]rpi.west);
+% NUCLEO TX down (send to RPi)
+\draw[arr] ([xshift=-6pt]nucleo.south) -- ++(0, -1.0);
 
-% RPi → NUCLEO RX (UART)
-\draw[arr] ([yshift=-8pt]rpi.west) -- node[lbl, below] {RX 115200}
-           ([yshift=-8pt]nucleo.east);
-
-% Camera → RPi (CSI)
-\draw[arr] (camera.north) -- node[lbl, right] {CSI} (rpi.south);
+% NUCLEO RX up (receive from RPi)
+\draw[arr] ([xshift=6pt]nucleo.south) ++(0, -1.0) -- ([xshift=6pt]nucleo.south);
 
 \end{tikzpicture}
-\caption{Embedded Platform: NUCLEO reads sensors (I2C), drives actuators (PWM), communicates with Raspberry Pi 5 via UART}
+\caption{Embedded Platform: NUCLEO reads sensors via I2C, drives actuators via PWM, communicates with Raspberry Pi 5 via UART}
 \end{figure}
 
 % ------ Brain ------
@@ -263,68 +241,97 @@ Role           & Controls front wheel steering angle \\
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[scale=0.82, every node/.style={transform shape},
+\begin{tikzpicture}[
   node/.style={draw, fill=white, minimum width=2.4cm, minimum height=0.7cm,
                font=\small, align=center},
-  group/.style={draw, dashed, rounded corners, inner sep=10pt},
+  group/.style={draw, dashed, rounded corners, yellow!60!black, inner sep=12pt},
+  grplbl/.style={font=\small\bfseries, yellow!60!black},
   arr/.style={-{Stealth}, thick},
-  lbl/.style={font=\footnotesize}
 ]
 
-% IO layer (left)
-\node[node] (serial)  at (-5.5,  0.4) {Serial Bridge};
-\node[node] (ws)      at (-5.5, -0.8) {WebSocket};
-\node[group, yellow!60!black, fit=(serial)(ws)] (io_box) {};
-\node[above=4pt of io_box, font=\small\bfseries, yellow!60!black] {IO};
+% --- IO group ---
+\node[node] (ctrl_cmd) at (0,   0.0) {Control Cmd};
+\node[node] (ypr)      at (3.0, 0.0) {Yaw Pitch Roll\\RPM};
+\node[node] (camera)   at (8.0, 0.0) {Camera};
+\node[group, fit=(ctrl_cmd)(ypr)(camera)] (io_box) {};
+\node[grplbl, above=5pt of io_box] {IO};
 
-% IPC bus (center)
-\node[node, minimum width=3.0cm] (ipc) at (0, 0) {IPC Bus\\(SHM + MQ)};
+% --- Topics ---
+\node[node, draw=green!60!black, dashed, text=green!60!black] (ego_state)    at (3.0, -2.0) {EGO\_STATE};
+\node[node, draw=green!60!black, dashed, text=green!60!black] (cam_frame)    at (8.0, -2.0) {CAMERA\_FRAME};
 
-% Perception layer (top)
-\node[node] (cam_node)  at ( 0.0,  3.2) {Camera Node};
-\node[node] (lane)      at ( 3.5,  3.2) {Lane Node};
-\node[node] (od)        at (-3.5,  3.2) {Object Detection};
-\node[node] (state)     at ( 0.0,  2.0) {State Estimator};
-\node[group, yellow!60!black, fit=(cam_node)(lane)(od)(state)] (perc_box) {};
-\node[above=4pt of perc_box, font=\small\bfseries, yellow!60!black] {Perception};
+% --- Arrows ---
+\draw[arr] (ctrl_cmd.north) -- ++(0, 0.8);
+\draw[arr] (ypr.north) ++(0, 0.8) -- (ypr.north);
+\draw[arr] (camera.north) ++(0, 0.8) -- (camera.north);
+\draw[arr] (ypr.south)    -- (ego_state.north);
+\draw[arr] (camera.south) -- (cam_frame.north);
 
-% Planning (right)
-\node[node] (plan) at (5.5, 0.4) {Planner};
+% --- Camera branch ---
+\node[node] (cam_lane)   at (6.5, -4.8) {Camera Lane};
+\node[node] (lane_out)  at (6.5, -6.2) {Heading\_err\\Offset};
+\node[group, fit=(cam_lane)(lane_out)] (lane_det) {};
+\node[grplbl, above=5pt of lane_det] {Lane Detect};
 
-% Control (right bottom)
-\node[node] (ctrl) at (5.5, -0.8) {Controller};
+\node[node] (od_cam) at (11.5, -4.8) {Camera Frame};
+\node[node] (od_out) at (11.5, -6.2) {Object Class\\Distance};
+\node[group, fit=(od_cam)(od_out)] (obj_det) {};
+\node[grplbl, above=5pt of obj_det] {Object Detect};
 
-\node[group, yellow!60!black, fit=(plan)(ctrl)] (brain_box) {};
-\node[above=4pt of brain_box, font=\small\bfseries, yellow!60!black] {Planning / Control};
+\draw[arr] ([xshift=-6pt]cam_frame.south) -- ++(0,-0.6) -- (6.3,-2.95) -- ([xshift=-5pt]cam_lane.north);
+\draw[arr] ([xshift= 6pt]cam_frame.south) -- ++(0,-0.6) -- (11.5,-2.95) -- (od_cam.north);
 
-% Arrows
-% Serial Bridge ↔ IPC
-\draw[arr] (serial.east) -- (ipc.west |- serial)
-  node[midway, above, lbl] {EGO\_STATE, SERIAL};
-% WebSocket ↔ IPC
-\draw[arr] (ipc.west |- ws) -- (ws.east)
-  node[midway, below, lbl] {telemetry};
+% --- Topics ---
+\node[node, draw=green!60!black, dashed, text=green!60!black] (lane_state)   at (6.5,  -8.5) {LANE\_STATE};
+\node[node, draw=green!60!black, dashed, text=green!60!black] (object_state) at (11.5, -8.5) {OBJECT\_STATE};
 
-% Perception ↔ IPC
-\draw[arr] (ipc.north) -- ++(0,0.4) -| (cam_node.south)
-  node[pos=0.3, right, lbl] {CAMERA\_FRAME};
-\draw[arr] (cam_node.east) -- (lane.west)
-  node[midway, above, lbl] {};
-\draw[arr] (state.south) -- (ipc.north |- state) -- (ipc.north)
-  node[pos=0.6, right, lbl] {EGO\_STATE};
-\draw[arr] (lane.south) -- ++(0,-0.3) -| (ipc.north)
-  node[pos=0.2, right, lbl] {LANE\_STATE};
+\draw[arr] (lane_out.south)  -- (lane_state.north);
+\draw[arr] (od_out.south)   -- (object_state.north);
 
-% Planning ↔ IPC
-\draw[arr] (ipc.east |- plan) -- (plan.west)
-  node[midway, above, lbl] {LANE\_STATE};
-\draw[arr] (plan.south) -- (ctrl.north)
-  node[midway, right, lbl] {};
-\draw[arr] (ctrl.west) -- (ipc.east |- ctrl)
-  node[midway, below, lbl] {CONTROL\_CMD};
+% --- Localization node ---
+\node[node] (loc_lane) at (6.5, -11.0) {Lane State};
+\node[node] (loc_ego)  at (3.0, -11.0) {Ego State};
+\node[node] (loc_out)  at (4.5, -12.4) {Location};
+\node[group, fit=(loc_lane)(loc_ego)(loc_out)] (localization) {};
+\node[grplbl, above=5pt of localization] {Localization};
+
+\draw[arr] (lane_state.south)  -| (loc_lane.north);
+\draw[arr] (ego_state.south)   -- ++(0, -1.0) -| (loc_ego.north);
+
+\draw[arr] (loc_ego.south)  -- (3.0, -11.6) -- (4.2, -11.6) -- ([xshift=-8pt]loc_out.north);
+\draw[arr] (loc_lane.south) -- (6.5, -11.6) -- (4.8, -11.6) -- ([xshift= 8pt]loc_out.north);
+
+\node[node, draw=green!60!black, dashed, text=green!60!black] (location) at (4.5, -14.2) {LOCATION};
+\draw[arr] (loc_out.south) -- (location.north);
+
+% --- Planning node ---
+\node[node] (plan_loc)  at (4.5, -16.2) {Location};
+\node[node] (plan_lane) at (8.6, -16.2) {Lane State};
+\node[node] (plan_obj)  at (11.5, -16.2) {Object State};
+\node[node] (plan_out)  at (8.0, -18.2) {Target Heading\\Target Speed};
+\node[group, fit=(plan_loc)(plan_lane)(plan_obj)(plan_out)] (plan_box) {};
+\node[grplbl, above=5pt of plan_box] {Planning};
+
+\draw[arr] (location.south) -- (plan_loc.north);
+\draw[arr] (lane_state.east) -- (8.6, -8.5) -- (plan_lane.north);
+\draw[arr] (object_state.south) -- (plan_obj.north);
+
+\node[node, draw=green!60!black, dashed, text=green!60!black] (control_cmd_t) at (0.0, -8.5) {CONTROL};
+\node[node, draw=green!60!black, dashed, text=green!60!black] (behaviour_cmd) at (8.0, -20.0) {BEHAVIOUR\_CMD};
+\draw[arr] (plan_out.south) -- (behaviour_cmd.north);
+
+% --- Control node ---
+\node[node] (ctrl_bcmd) at (0.0, -20.0) {Behaviour Cmd};
+\node[node] (ctrl_ccmd) at (0.0, -19.0) {Control Cmd};
+\node[group, fit=(ctrl_bcmd)(ctrl_ccmd)] (ctrl_box) {};
+\node[grplbl, above=5pt of ctrl_box] {Control};
+
+\draw[arr] (behaviour_cmd.west) -- (ctrl_bcmd.east);
+\draw[arr] (ctrl_ccmd.north) -- (control_cmd_t.south);
+\draw[arr] (control_cmd_t.north) -- (ctrl_cmd.south);
 
 \end{tikzpicture}
-\caption{Brain architecture: nodes communicate via IPC bus (SHM for latest-wins, MQ for queued messages)}
+\caption{Brain architecture: IO layer}
 \end{figure}
 
 % ------------------------------------------------------------
@@ -332,13 +339,15 @@ Role           & Controls front wheel steering angle \\
 
 \subsubsection{Peripheral}
 
+% ================================================================
 % ---- I2C ----
+% ================================================================
 \textbf{I2C (Inter-Integrated Circuit)}
 
 I2C is a two-wire synchronous serial protocol using a shared clock line (SCL) and a bidirectional data line (SDA).
 Communication is initiated by a START condition (SDA falls while SCL is high), followed by a 7-bit device address,
 a read/write bit, an ACK from the slave, data bytes, and a STOP condition (SDA rises while SCL is high).
-In this project, I2C is used to communicate with the BNO055 IMU at address \texttt{0x28}.
+In this project, I2C1 (PB8=SCL, PB9=SDA) communicates with BNO055 (\texttt{0x28}) and AS5600 (\texttt{0x36}) at 100\,kHz.
 
 \begin{figure}[h]
 \centering
@@ -393,6 +402,84 @@ In this project, I2C is used to communicate with the BNO055 IMU at address \text
 \caption{I2C transaction: START, 7-bit address (0x28), R/W bit, ACK}
 \end{figure}
 
+\textit{Function: \texttt{I2C1\_Master\_Init()}}
+
+Configures GPIO PB8/PB9 as AF4 (open-drain, pull-up), enables clocks, then sets I2C1 timing for 100\,kHz with PCLK1 = 16\,MHz.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{Register} & \textbf{Field} & \textbf{Value} & \textbf{Effect} \\
+\hline
+\texttt{RCC->AHB1ENR} & \texttt{GPIOBEN} & \texttt{|= (1<<1)} & Enable GPIOB clock \\
+\texttt{RCC->APB1ENR} & \texttt{I2C1EN}  & \texttt{|= (1<<21)} & Enable I2C1 clock \\
+\texttt{GPIOB->MODER} & PB8,PB9 & \texttt{0b10} each & Alternate function mode \\
+\texttt{GPIOB->OTYPER} & PB8,PB9 & \texttt{1} each & Open-drain output \\
+\texttt{GPIOB->OSPEEDR} & PB8,PB9 & \texttt{0b11} each & High speed \\
+\texttt{GPIOB->PUPDR} & PB8,PB9 & \texttt{0b01} each & Pull-up \\
+\texttt{GPIOB->AFR[1]} & PB8,PB9 & \texttt{0x4} each & AF4 = I2C1 \\
+\texttt{I2C1->CR1} & \texttt{PE} & \texttt{0} (clear) & Disable I2C before config \\
+\texttt{I2C1->CR2} & \texttt{FREQ} & \texttt{16} & PCLK1 = 16\,MHz \\
+\texttt{I2C1->CCR} & \texttt{CCR} & \texttt{80} & 100\,kHz: \(T_{high}=T_{low}=\frac{80}{16\text{MHz}}=5\,\mu s\) \\
+\texttt{I2C1->TRISE} & \texttt{TRISE} & \texttt{17} & Max rise time: \(\frac{1000\,ns}{62.5\,ns}+1=17\) \\
+\texttt{I2C1->CR1} & \texttt{ACK} & \texttt{|= (1<<10)} & Enable auto-ACK \\
+\texttt{I2C1->CR1} & \texttt{PE} & \texttt{|= (1<<0)} & Enable I2C peripheral \\
+\hline
+\end{tabular}
+\caption{\texttt{I2C1\_Master\_Init()} register configuration}
+\end{table}
+
+\textit{Function: \texttt{I2C1\_WriteReg(dev, reg, data)}}
+
+Sends START → device address (write) → register address → data byte → STOP.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{Register} & \textbf{Action} & \textbf{Value / Condition} & \textbf{Purpose} \\
+\hline
+\texttt{I2C1->CR1}  & Write & \texttt{|= START (1<<8)} & Generate START condition \\
+\texttt{I2C1->SR1}  & Poll  & wait \texttt{SB==1} & START sent \\
+\texttt{I2C1->DR}   & Write & \texttt{dev<<1} & Send address + Write bit \\
+\texttt{I2C1->SR1/SR2} & Read & wait \texttt{ADDR==1}, clear by reading SR2 & Address ACKed \\
+\texttt{I2C1->SR1}  & Poll  & wait \texttt{TXE==1} & Tx buffer empty \\
+\texttt{I2C1->DR}   & Write & \texttt{reg} & Send register address \\
+\texttt{I2C1->SR1}  & Poll  & wait \texttt{TXE==1} & Tx buffer empty \\
+\texttt{I2C1->DR}   & Write & \texttt{data} & Send data byte \\
+\texttt{I2C1->SR1}  & Poll  & wait \texttt{BTF==1} & Byte transfer finished \\
+\texttt{I2C1->CR1}  & Write & \texttt{|= STOP (1<<9)} & Generate STOP condition \\
+\hline
+\end{tabular}
+\caption{\texttt{I2C1\_WriteReg()} register sequence}
+\end{table}
+
+\textit{Function: \texttt{I2C1\_ReadMulti(dev, reg, buf, len)}}
+
+Sends register address (write phase), then Repeated START, reads \texttt{len} bytes (NACK + STOP on last byte).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{Register} & \textbf{Action} & \textbf{Value / Condition} & \textbf{Purpose} \\
+\hline
+\texttt{I2C1->CR1}  & Write & \texttt{|= START}     & START condition \\
+\texttt{I2C1->DR}   & Write & \texttt{dev<<1}       & Address + Write \\
+\texttt{I2C1->DR}   & Write & \texttt{reg}          & Register pointer \\
+\texttt{I2C1->SR1}  & Poll  & wait \texttt{BTF==1}  & Write phase done \\
+\texttt{I2C1->CR1}  & Write & \texttt{|= START}     & Repeated START \\
+\texttt{I2C1->DR}   & Write & \texttt{(dev<<1)|1}   & Address + Read bit \\
+\texttt{I2C1->CR1}  & Write (last byte) & \texttt{\&= \textasciitilde ACK} & Disable ACK before last byte \\
+\texttt{I2C1->CR1}  & Write (last byte) & \texttt{|= STOP}    & STOP after last byte \\
+\texttt{I2C1->SR1}  & Poll each byte & wait \texttt{RXNE==1} & Data register not empty \\
+\texttt{I2C1->DR}   & Read  & \texttt{buf[i]}       & Read received byte \\
+\hline
+\end{tabular}
+\caption{\texttt{I2C1\_ReadMulti()} register sequence}
+\end{table}
+
 % ---- PWM ----
 \textbf{PWM (Pulse Width Modulation)}
 
@@ -419,6 +506,54 @@ Typical servo period is 20\,ms (50\,Hz); pulse width 1--2\,ms maps to 0°--180°
 \end{tikzpicture}
 \caption{PWM signal: varying pulse width, fixed 50\,Hz period}
 \end{figure}
+
+\textit{Function: \texttt{PWM\_Init()}}
+
+Configures PA0 (TIM2\_CH1, speed servo) and PA1 (TIM2\_CH2, steering servo) as AF1 PWM outputs at 50\,Hz with PCLK1 = 16\,MHz.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{Register} & \textbf{Field} & \textbf{Value} & \textbf{Effect} \\
+\hline
+\texttt{RCC->AHB1ENR} & \texttt{GPIOAEN} & \texttt{|= (1<<0)}  & Enable GPIOA clock \\
+\texttt{RCC->APB1ENR} & \texttt{TIM2EN}  & \texttt{|= (1<<0)}  & Enable TIM2 clock \\
+\texttt{GPIOA->MODER} & PA0, PA1 & \texttt{0b10} each & Alternate function mode \\
+\texttt{GPIOA->AFR[0]} & PA0, PA1 & \texttt{0x1} each & AF1 = TIM2\_CH1/CH2 \\
+\texttt{TIM2->PSC}    & PSC & \texttt{15} (16-1) & Tick = 16\,MHz/16 = 1\,MHz \\
+\texttt{TIM2->ARR}    & ARR & \texttt{19999} (20000-1) & Period = 20\,ms → 50\,Hz \\
+\texttt{TIM2->CCR1}   & CCR1 & \texttt{1500} & Speed servo: neutral (1.5\,ms) \\
+\texttt{TIM2->CCR2}   & CCR2 & \texttt{1500} & Steering servo: center (1.5\,ms) \\
+\texttt{TIM2->CCMR1}  & OC1M & \texttt{0b110} (bits [6:4]) & PWM mode 1 on CH1 \\
+\texttt{TIM2->CCMR1}  & OC1PE & \texttt{1} (bit 3) & Preload enable CH1 \\
+\texttt{TIM2->CCMR1}  & OC2M & \texttt{0b110} (bits [14:12]) & PWM mode 1 on CH2 \\
+\texttt{TIM2->CCMR1}  & OC2PE & \texttt{1} (bit 11) & Preload enable CH2 \\
+\texttt{TIM2->CCER}   & CC1E & \texttt{1} (bit 0) & Enable CH1 output \\
+\texttt{TIM2->CCER}   & CC2E & \texttt{1} (bit 4) & Enable CH2 output \\
+\texttt{TIM2->EGR}    & UG   & \texttt{1} (bit 0) & Force reload PSC/ARR \\
+\texttt{TIM2->CR1}    & CEN  & \texttt{|= (1<<0)} & Start counter \\
+\hline
+\end{tabular}
+\caption{\texttt{PWM\_Init()} register configuration}
+\end{table}
+
+\textit{Functions: \texttt{Servo\_Speed\_Set(us)}, \texttt{Servo\_Steering\_Set(us)}}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{Function} & \textbf{Register} & \textbf{Value} & \textbf{Range} \\
+\hline
+\texttt{Servo\_Speed\_Set(us)}    & \texttt{TIM2->CCR1} & \texttt{us} & 1000--2000\,\(\mu\)s \\
+\texttt{Servo\_Steering\_Set(us)} & \texttt{TIM2->CCR2} & \texttt{us} & 1100--1900\,\(\mu\)s \\
+\texttt{Servo\_Speed\_Set\_RPM(rpm)}   & \texttt{TIM2->CCR1} & \texttt{1500 - (int)rpm} & rpm: -500..+500 \\
+\texttt{Servo\_Steering\_Set\_Deg(deg)} & \texttt{TIM2->CCR2} & \texttt{1500 + (int)(deg*10)} & deg: -40..+40° \\
+\hline
+\end{tabular}
+\caption{Servo control functions and their CCR values}
+\end{table}
 
 % ---- UART ----
 \textbf{UART (Universal Asynchronous Receiver/Transmitter)}
@@ -455,6 +590,69 @@ The STM32 transmits sensor data to the Raspberry Pi 5 over UART in ASCII frames:
 \end{tikzpicture}
 \caption{UART frame: start bit, 8 data bits (LSB first), stop bit}
 \end{figure}
+
+\textit{Function: \texttt{UART1\_init()}} — PA9 TX, PA10 RX, AF7, 115200\,baud 8N1, PCLK2 = 16\,MHz.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{Register} & \textbf{Field} & \textbf{Value} & \textbf{Effect} \\
+\hline
+\texttt{RCC->AHB1ENR} & \texttt{GPIOAEN} & \texttt{|= (1<<0)}  & Enable GPIOA clock \\
+\texttt{RCC->APB2ENR} & \texttt{USART1EN} & \texttt{|= (1<<4)} & Enable USART1 clock \\
+\texttt{GPIOA->MODER} & PA9, PA10 & \texttt{0b10} each & Alternate function mode \\
+\texttt{GPIOA->AFR[1]} & PA9, PA10 & \texttt{0x7} each & AF7 = USART1 \\
+\texttt{USART1->BRR}  & DIV\_Mantissa & \texttt{8<<4} & \multirow{2}{*}{115200\,baud: USARTDIV = 8.6875} \\
+                      & DIV\_Fraction & \texttt{11}   & \\
+\texttt{USART1->CR1}  & OVER8 & \texttt{0} (bit 15) & Oversampling by 16 \\
+\texttt{USART1->CR1}  & M     & \texttt{0} (bit 12) & 8-bit word length \\
+\texttt{USART1->CR1}  & PCE   & \texttt{0} (bit 10) & No parity \\
+\texttt{USART1->CR1}  & RE    & \texttt{1} (bit 2)  & Receiver enable \\
+\texttt{USART1->CR1}  & TE    & \texttt{1} (bit 3)  & Transmitter enable \\
+\texttt{USART1->CR1}  & UE    & \texttt{1} (bit 13) & USART enable \\
+\hline
+\end{tabular}
+\caption{\texttt{UART1\_init()} register configuration}
+\end{table}
+
+\textit{Function: \texttt{UART2\_init()}} — PA2 TX, PA3 RX, AF7, 115200\,baud, with RXNE interrupt (NVIC IRQ 38).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{Register} & \textbf{Field} & \textbf{Value} & \textbf{Effect} \\
+\hline
+\texttt{RCC->APB1ENR} & \texttt{USART2EN} & \texttt{|= (1<<17)} & Enable USART2 clock \\
+\texttt{GPIOA->MODER} & PA2, PA3 & \texttt{0b10} each & Alternate function mode \\
+\texttt{GPIOA->AFR[0]} & PA2, PA3 & \texttt{0x7} each & AF7 = USART2 \\
+\texttt{USART2->BRR}  & & \texttt{(8<<4)|11} & 115200\,baud @16\,MHz \\
+\texttt{USART2->CR1}  & RXNEIE & \texttt{1} (bit 5) & Enable RXNE interrupt \\
+\texttt{USART2->CR1}  & RE, TE, UE & \texttt{1} each & Enable RX, TX, USART \\
+\texttt{NVIC->ISER[1]} & IRQ38 & \texttt{1<<(38-32)} & Enable USART2 IRQ in NVIC \\
+\hline
+\end{tabular}
+\caption{\texttt{UART2\_init()} register configuration}
+\end{table}
+
+\textit{Functions: \texttt{UART1\_Transmit(data)}, \texttt{UART2\_Transmit(data)}}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{Register} & \textbf{Action} & \textbf{Condition / Value} & \textbf{Purpose} \\
+\hline
+\texttt{USARTx->SR} & Poll & wait \texttt{TXE==1} (bit 7) & TX buffer empty \\
+\texttt{USARTx->DR} & Write & \texttt{data} & Load byte to transmit \\
+\texttt{USARTx->SR} & Poll & wait \texttt{TC==1} (bit 6)  & Transmission complete \\
+\hline
+\end{tabular}
+\caption{UART transmit sequence}
+\end{table}
+
+\textit{ISR: \texttt{USART2\_IRQHandler()}} — Triggered on each received byte, reads \texttt{USART2->DR} to clear \texttt{RXNE}, passes byte to \texttt{UART\_Parse\_Byte()} which accumulates into a command buffer and calls \texttt{UART\_Parse\_Command()} on \texttt{;;} delimiter.
 
 % ---- RCC ----
 \textbf{RCC (Reset and Clock Control)}
@@ -530,105 +728,177 @@ In this project:
 % ================================================================
 \textbf{IMU: BNO055}
 
-\textit{Communication protocol: I2C, address \texttt{0x28} (ADDR pin low) or \texttt{0x29} (ADDR pin high).
-Bus speed up to 400\,kHz (Fast Mode). The MCU acts as master; BNO055 is slave.}
+Communication: I2C, address \texttt{0x29} (ADDR pin high).
+The MCU is master; BNO055 is slave. Bus speed 100\,kHz matching \texttt{I2C1\_Master\_Init()}.
 
 \medskip
-\textit{Key registers:}
+\textit{Key registers used in implementation:}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{llp{7cm}}
+\begin{tabular}{lll}
 \hline
-\textbf{Register} & \textbf{Address} & \textbf{Description} \\
+\textbf{Macro} & \textbf{Address} & \textbf{Description} \\
 \hline
-\texttt{CHIP\_ID}       & \texttt{0x00} & Should read \texttt{0xA0} — used to verify communication \\
-\texttt{OPR\_MODE}      & \texttt{0x3D} & Operation mode: \texttt{0x0C} = NDOF (full fusion), \texttt{0x00} = CONFIG \\
-\texttt{PWR\_MODE}      & \texttt{0x3E} & Power mode: \texttt{0x00} = Normal \\
-\texttt{SYS\_TRIGGER}   & \texttt{0x3F} & System trigger: \texttt{0x20} = reset \\
-\texttt{UNIT\_SEL}      & \texttt{0x3B} & Unit selection: bit0=0 → degrees, bit0=1 → radians \\
-\texttt{EUL\_H\_LSB}    & \texttt{0x1A} & Euler heading (yaw) LSB — 1 LSB = \(1/16\)° \\
-\texttt{EUL\_H\_MSB}    & \texttt{0x1B} & Euler heading (yaw) MSB \\
-\texttt{EUL\_P\_LSB}    & \texttt{0x1C} & Euler pitch LSB \\
-\texttt{EUL\_P\_MSB}    & \texttt{0x1D} & Euler pitch MSB \\
-\texttt{EUL\_R\_LSB}    & \texttt{0x1E} & Euler roll LSB \\
-\texttt{EUL\_R\_MSB}    & \texttt{0x1F} & Euler roll MSB \\
-\texttt{CALIB\_STAT}    & \texttt{0x35} & Calibration status: bits [7:6]=sys, [5:4]=gyro, [3:2]=accel, [1:0]=mag (3=fully calibrated) \\
+\texttt{BNO055\_CHIP\_ID}   & \texttt{0x00} & Chip ID — expected value \texttt{0xA0} \\
+\texttt{BNO055\_PAGE\_ID}   & \texttt{0x07} & Page select — write \texttt{0x00} to use page 0 \\
+\texttt{BNO055\_OPR\_MODE}  & \texttt{0x3D} & Operation mode: \texttt{0x00}=CONFIG, \texttt{0x0C}=NDOF \\
+\texttt{BNO055\_PWR\_MODE}  & \texttt{0x3E} & Power mode: \texttt{0x00}=Normal, \texttt{0x01}=LowPower, \texttt{0x02}=Suspend \\
+\texttt{BNO055\_UNIT\_SEL}  & \texttt{0x3B} & Unit select: bit0=0 → degrees output \\
+\texttt{BNO055\_EUL\_X\_LSB}& \texttt{0x1A} & Euler heading (yaw) LSB — 1\,LSB = \(1/16\)° \\
+\texttt{BNO055\_EUL\_X\_MSB}& \texttt{0x1B} & Euler heading (yaw) MSB \\
+\texttt{BNO055\_EUL\_Y\_LSB}& \texttt{0x1C} & Euler pitch LSB \\
+\texttt{BNO055\_EUL\_Y\_MSB}& \texttt{0x1D} & Euler pitch MSB \\
+\texttt{BNO055\_EUL\_Z\_LSB}& \texttt{0x1E} & Euler roll LSB \\
+\texttt{BNO055\_EUL\_Z\_MSB}& \texttt{0x1F} & Euler roll MSB \\
+\texttt{BNO055\_CALIB\_STAT}& \texttt{0x35} & Calibration status — bits [7:6]=sys, [5:4]=gyro, [3:2]=accel, [1:0]=mag \\
 \hline
 \end{tabular}
-\caption{BNO055 key registers}
+\caption{BNO055 registers used in implementation}
 \end{table}
 
-\textit{Initialization \& data acquisition sequence:}
+\textit{Function: \texttt{BNO055\_Init()}}
 
-\begin{enumerate}
-  \item \textbf{Power-on wait}: delay \(\geq\)650\,ms after power-up for internal oscillator to stabilize.
-  \item \textbf{Verify chip}: read \texttt{CHIP\_ID} (0x00) → expect \texttt{0xA0}; retry up to 5 times if NACK.
-  \item \textbf{Enter CONFIG mode}: write \texttt{0x00} to \texttt{OPR\_MODE} (0x3D); wait 19\,ms.
-  \item \textbf{Set units}: write \texttt{UNIT\_SEL} (0x3B) → \texttt{0x00} (degrees, m/s², dps).
-  \item \textbf{Set power mode}: write \texttt{0x00} (Normal) to \texttt{PWR\_MODE} (0x3E).
-  \item \textbf{Set NDOF fusion mode}: write \texttt{0x0C} to \texttt{OPR\_MODE}; wait 7\,ms.
-  \item \textbf{Read Euler angles} (burst read 6 bytes from \texttt{0x1A}):
-  \begin{itemize}
-    \item Combine LSB+MSB: \texttt{int16\_t raw = (MSB << 8) | LSB}
-    \item Convert: \texttt{float degrees = raw / 16.0f}
-    \item Order: \texttt{[EUL\_H, EUL\_P, EUL\_R]} → yaw, pitch, roll
-  \end{itemize}
-  \item \textbf{Repeat step 7} at desired rate (project uses 100\,Hz polling via TIM3 interrupt).
-\end{enumerate}
+\begin{table}[H]
+\centering
+\begin{tabular}{lllp{4.5cm}}
+\hline
+\textbf{Step} & \textbf{I2C Write reg} & \textbf{Value} & \textbf{Purpose} \\
+\hline
+1 & \texttt{OPR\_MODE} (0x3D) & \texttt{0x00} & Enter CONFIG mode before changing settings \\
+2 & \texttt{PAGE\_ID}  (0x07) & \texttt{0x00} & Select page 0 (sensor/output registers) \\
+3 & \texttt{PWR\_MODE} (0x3E) & \texttt{0x00} & Set Normal power mode \\
+4 & \texttt{OPR\_MODE} (0x3D) & \texttt{0x0C} & Enter NDOF fusion mode (9-DOF) \\
+\hline
+\end{tabular}
+\caption{\texttt{BNO055\_Init()} I2C write sequence}
+\end{table}
+
+\textit{Function: \texttt{BNO055\_ReadEuler\_raw(x, y, z)}}
+
+Burst-reads 6 bytes starting from \texttt{EUL\_X\_LSB} (0x1A).
+Each axis is a signed 16-bit little-endian value; 1\,LSB = \(1/16\)°.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{I2C operation} & \textbf{Reg} & \textbf{Bytes} & \textbf{Decode} \\
+\hline
+Read 6 bytes from & \texttt{0x1A} & \texttt{b[0..5]} & \\
+Heading (yaw) X   & \texttt{0x1A--0x1B} & \texttt{b[1]<<8 | b[0]} & \texttt{int16\_t}, divide by 16 → degrees \\
+Pitch Y           & \texttt{0x1C--0x1D} & \texttt{b[3]<<8 | b[2]} & \texttt{int16\_t}, divide by 16 → degrees \\
+Roll Z            & \texttt{0x1E--0x1F} & \texttt{b[5]<<8 | b[4]} & \texttt{int16\_t}, divide by 16 → degrees \\
+\hline
+\end{tabular}
+\caption{\texttt{BNO055\_ReadEuler\_raw()} data decode}
+\end{table}
+
+\textit{Function: \texttt{BNO055\_ReadCalibStatus()}}
+
+Reads 1 byte from \texttt{CALIB\_STAT} (0x35). Each sensor pair of bits = 3 means fully calibrated.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Bits} & \textbf{Sensor} & \textbf{Value 3 = fully calibrated} \\
+\hline
+{[7:6]} & System  & Overall fusion calibration \\
+{[5:4]} & Gyro    & Gyroscope \\
+{[3:2]} & Accel   & Accelerometer \\
+{[1:0]} & Mag     & Magnetometer \\
+\hline
+\end{tabular}
+\caption{\texttt{CALIB\_STAT} bit fields}
+\end{table}
+
+\textit{Function: \texttt{IMU\_HealthCheck(ex, ey, ez)}}
+
+Called after each \texttt{BNO055\_ReadEuler\_raw()}. If all three axes are zero for 5 consecutive reads,
+the IMU is flagged as faulty and the watchdog (\texttt{Feed\_WD()}) stops being fed — triggering a system reset.
 
 \medskip
 
 % ================================================================
 \textbf{Encoder: AS5600}
 
-\textit{Communication protocol: I2C, fixed address \texttt{0x36} (not configurable).
-Bus speed up to 1\,MHz (Fast Mode Plus). Provides 12-bit absolute angle output.}
+Communication: I2C, fixed address \texttt{0x36}. No init sequence required —
+the device is ready immediately after power-on. Only reading is performed at runtime.
 
 \medskip
-\textit{Key registers:}
+\textit{Key registers used in implementation:}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{llp{7.5cm}}
+\begin{tabular}{lll}
 \hline
-\textbf{Register} & \textbf{Address} & \textbf{Description} \\
+\textbf{Macro} & \textbf{Address} & \textbf{Description} \\
 \hline
-\texttt{ZMCO}        & \texttt{0x00} & Number of times ZPOS/MPOS have been permanently written \\
-\texttt{ZPOS\_H}     & \texttt{0x01} & Zero position (start angle) high byte [11:8] \\
-\texttt{ZPOS\_L}     & \texttt{0x02} & Zero position (start angle) low byte [7:0] \\
-\texttt{CONF\_H}     & \texttt{0x07} & Configuration high byte (slow filter, fast filter, watchdog) \\
-\texttt{CONF\_L}     & \texttt{0x08} & Configuration low byte (power mode, hysteresis, output stage, PWM freq) \\
-\texttt{RAW\_ANGLE\_H} & \texttt{0x0C} & Raw angle high byte [11:8] (before zero-position offset) \\
-\texttt{RAW\_ANGLE\_L} & \texttt{0x0D} & Raw angle low byte [7:0] \\
-\texttt{ANGLE\_H}    & \texttt{0x0E} & Processed angle high byte [11:8] (after zero offset, scaled to \texttt{MANG}) \\
-\texttt{ANGLE\_L}    & \texttt{0x0F} & Processed angle low byte [7:0] \\
-\texttt{STATUS}      & \texttt{0x0B} & bits [5:3]: MH=magnet too strong, ML=magnet too weak, MD=magnet detected \\
-\texttt{AGC}         & \texttt{0x1A} & Automatic gain control value (0–255); nominal ~128 \\
-\texttt{MAGNITUDE\_H}& \texttt{0x1B} & CORDIC magnitude high byte \\
-\texttt{MAGNITUDE\_L}& \texttt{0x1C} & CORDIC magnitude low byte \\
+\texttt{AS5600\_STATUS}    & \texttt{0x0B} & Magnet status: bit5=MH (too strong), bit4=ML (too weak), bit3=MD (detected) \\
+\texttt{AS5600\_ANGLE\_MSB}& \texttt{0x0E} & Processed angle high byte [11:8] \\
+\texttt{AS5600\_ANGLE\_LSB}& \texttt{0x0F} & Processed angle low byte [7:0] \\
 \hline
 \end{tabular}
-\caption{AS5600 key registers}
+\caption{AS5600 registers used in implementation}
 \end{table}
 
-\textit{Initialization \& data acquisition sequence:}
+\textit{Function: \texttt{AS5600\_ReadStatus()}}
 
-\begin{enumerate}
-  \item \textbf{Verify magnet}: read \texttt{STATUS} (0x0B), check bit MD (bit 5) = 1 → magnet detected.
-        If ML or MH set, reposition magnet until MD only.
-  \item \textbf{Check AGC}: read \texttt{AGC} (0x1A); value should be 50–200 for reliable operation.
-  \item \textbf{(Optional) Set zero position}: write current angle to \texttt{ZPOS\_H/L} to define the zero reference.
-  \item \textbf{Read angle} (burst read 2 bytes from \texttt{0x0E}):
-  \begin{itemize}
-    \item \texttt{uint16\_t raw = ((ANGLE\_H \& 0x0F) << 8) | ANGLE\_L}
-    \item Range: 0–4095 → 0°–360°
-    \item Convert: \texttt{float deg = raw * 360.0f / 4096.0f}
-  \end{itemize}
-  \item \textbf{Compute RPM}: track angle over time, handle 0°/360° wrap-around,
-        compute \(\Delta\theta / \Delta t\), convert to RPM.
-  \item \textbf{Repeat step 4--5} at desired rate (project uses 1\,kHz via TIM3 interrupt).
-\end{enumerate}
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{I2C operation} & \textbf{Reg} & \textbf{Bytes} & \textbf{Check} \\
+\hline
+Read 1 byte & \texttt{0x0B} & \texttt{v} & bit3 (MD) must be 1 for valid readings \\
+\hline
+\end{tabular}
+\caption{\texttt{AS5600\_ReadStatus()} operation}
+\end{table}
+
+\textit{Function: \texttt{AS5600\_ReadAngleRaw()}}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\hline
+\textbf{I2C operation} & \textbf{Reg} & \textbf{Bytes} & \textbf{Decode} \\
+\hline
+Read 2 bytes & \texttt{0x0E} & \texttt{buf[0..1]} & \texttt{raw = (buf[0]<<8 | buf[1]) \& 0x0FFF} \\
+\hline
+\end{tabular}
+\caption{\texttt{AS5600\_ReadAngleRaw()} — returns 12-bit value 0--4095}
+\end{table}
+
+\textit{Function: \texttt{AS5600\_ReadAngleDeg()}}
+
+Calls \texttt{AS5600\_ReadAngleRaw()}, converts with:
+\[
+\text{degrees} = \frac{\text{raw} \times 360}{4096}
+\]
+
+\textit{Function: \texttt{AS5600\_ReadAngularSpeedDeg(dt\_sec)}}
+
+Computes angular velocity in °/s from two consecutive raw readings.
+Handles 0°/360° wrap-around by treating a delta $>2048$ or $<-2048$ as a wrap.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lp{9cm}}
+\hline
+\textbf{Step} & \textbf{Description} \\
+\hline
+1 & Read \texttt{curr\_raw} via \texttt{AS5600\_ReadAngleRaw()} \\
+2 & \texttt{delta = (int16\_t)(curr\_raw - prev\_raw)} \\
+3 & If \texttt{delta > 2048}: \texttt{delta -= 4096} (wrapped CW) \\
+4 & If \texttt{delta < -2048}: \texttt{delta += 4096} (wrapped CCW) \\
+5 & \texttt{delta\_deg = delta * 360.0f / 4096.0f} \\
+6 & Return \texttt{delta\_deg / dt\_sec} (°/s) \\
+\hline
+\end{tabular}
+\caption{\texttt{AS5600\_ReadAngularSpeedDeg()} algorithm}
+\end{table}
 
 \subsubsection{Actuator}
 
@@ -652,32 +922,141 @@ Bus speed up to 1\,MHz (Fast Mode Plus). Provides 12-bit absolute angle output.}
 \ldots
 
 \textbf{Inter Process Communication}
+
+Inter-Process Communication (IPC) refers to mechanisms that allow independent OS processes to exchange data.
+On Linux, the kernel provides several IPC primitives, each with different trade-offs in latency, throughput,
+ordering guarantees, and persistence.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lp{3.8cm}p{3.8cm}l}
+\hline
+\textbf{Mechanism} & \textbf{Characteristics} & \textbf{Use case} & \textbf{Used in project} \\
+\hline
+POSIX Message Queue
+  & Kernel-buffered, ordered FIFO queue; fixed max depth (\texttt{msg\_max}); supports blocking/non-blocking send/recv
+  & Low-rate, queued messages where every message must be delivered
+  & Yes — MQ transport \\
+\addlinespace
+Shared Memory (SHM)
+  & Fastest IPC: processes map the same physical page; no kernel copy; requires explicit synchronization
+  & High-rate data where only the latest value matters (sensor frames, state)
+  & Yes — SHM latest-wins \\
+\addlinespace
+Unix Domain Socket
+  & Stream or datagram socket over a file path; reliable, ordered; higher latency than SHM
+  & Bidirectional communication between local processes
+  & Not used \\
+\addlinespace
+TCP Socket
+  & Network socket; works across machines; adds TCP overhead
+  & Remote monitoring, cross-host communication
+  & Not used \\
+\hline
+\end{tabular}
+\caption{Linux IPC mechanism comparison}
+\end{table}
+
+This project implements two transports inside \texttt{libipc}:
+
 \begin{itemize}
-    \item Message Queue --- \ldots
-    \item Unix Domain Socket --- \ldots
-    \item TCP Socket --- \ldots
-    \item Shared Memory --- \ldots
+  \item \textbf{POSIX MQ} (\texttt{mq\_transport.c}): wraps \texttt{mq\_open}/\texttt{mq\_send}/\texttt{mq\_receive}.
+        Queue depth is clamped to the system limit (\texttt{/proc/sys/fs/mqueue/msg\_max}, default 10).
+        Used for topics where every message must be consumed (e.g.\ \texttt{CONTROL\_CMD}).
+  \item \textbf{Shared Memory} (\texttt{shm.c}): publisher creates a named SHM object via \texttt{shm\_open} +
+        \texttt{ftruncate}, writes a fixed-size slot protected by a \texttt{pthread\_rwlock}.
+        Subscriber opens (does \emph{not} create) the same object and reads the latest value.
+        Used for high-rate sensor data where stale frames are discarded (e.g.\ \texttt{CAMERA\_FRAME}, \texttt{EGO\_STATE}).
 \end{itemize}
 
+\medskip
 \textbf{Pub/Sub Model}
+
+The project adopts a publish/subscribe pattern on top of the two transports.
+Each logical data stream is identified by a \emph{topic}; nodes are decoupled — a publisher does not know
+who is listening, and a subscriber does not know the publisher's identity.
+
 \begin{itemize}
-    \item Node --- \ldots
-    \item Topic --- \ldots
-    \item Publish --- \ldots
-    \item Subscribe --- \ldots
+  \item \textbf{Node} --- an independent OS process that owns one or more publishers or subscribers.
+        Each node links against \texttt{liblibipc} and calls the C API directly.
+  \item \textbf{Topic} --- a named channel identified by a \texttt{TopicId} enum value (e.g.\
+        \texttt{CAMERA\_FRAME=1}, \texttt{SERIAL=2}, \texttt{EGO\_STATE=3}, \texttt{LANE\_STATE=4}, \texttt{CONTROL\_CMD=5}).
+        Each topic has a fixed payload type, transport kind (MQ or SHM), and drop policy, declared in \texttt{topic.c}.
+  \item \textbf{Publish} --- a node calls \texttt{ipc\_publish()} with a topic ID and a pointer to a POD struct.
+        The bus layer routes the write to the correct transport. The publisher must start before any subscriber.
+  \item \textbf{Subscribe} --- a node calls \texttt{ipc\_subscribe()} then \texttt{ipc\_recv()} (blocking or timed).
+        For SHM topics the subscriber receives the latest written value; for MQ topics it dequeues in FIFO order.
 \end{itemize}
 
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node/.style={draw, fill=white, minimum width=2.6cm, minimum height=0.7cm, font=\small, align=center},
+  arr/.style={-{Stealth}, thick},
+  lbl/.style={font=\footnotesize, fill=white, inner sep=1pt}
+]
+  \node[node] (pub)  at (0, 0)    {Publisher\\(node A)};
+  \node[node] (bus)  at (4.5, 0)  {IPC Bus\\(SHM / MQ)};
+  \node[node] (sub1) at (9, 0.8)  {Subscriber\\(node B)};
+  \node[node] (sub2) at (9, -0.8) {Subscriber\\(node C)};
+
+  \draw[arr] (pub.east)  -- node[lbl, above] {publish(topic, data)} (bus.west);
+  \draw[arr] (bus.east)  -- node[lbl, above] {recv()} (sub1.west);
+  \draw[arr] (bus.east)  -- node[lbl, below] {recv()} (sub2.west);
+\end{tikzpicture}
+\caption{Pub/Sub model: publisher writes to the bus; multiple subscribers receive independently}
+\end{figure}
+
+\medskip
 \textbf{Drop Policy}
 
-\begin{itemize}
-    \item Topic
-    \item Message
-    \item Payload
-\end{itemize}
+Drop policy defines what happens when a new message arrives and the buffer is full, or when a subscriber
+reads slower than the publisher writes.
 
+\begin{table}[H]
+\centering
+\begin{tabular}{lp{5cm}l}
+\hline
+\textbf{Policy} & \textbf{Behavior} & \textbf{Transport} \\
+\hline
+\texttt{NEW}   & Drop the \emph{incoming} message if buffer full; keep existing messages & MQ \\
+\texttt{OLD}   & Drop the \emph{oldest} message in buffer to make room for the new one  & MQ \\
+\texttt{NEVER} & Latest write always overwrites the single slot; subscriber always gets newest value & SHM \\
+\hline
+\end{tabular}
+\caption{Drop policies in \texttt{libipc}}
+\end{table}
+
+In this project all SHM topics use \texttt{NEVER} (latest-wins); MQ topics use \texttt{NEW} (block new if full).
+
+\medskip
 \textbf{C API / C++ Binding}
 
+The C API (\texttt{libipc/include/ipc/bus.h}) exposes four functions:
+\begin{itemize}
+  \item \texttt{ipc\_publish\_open(TopicId)} --- allocate publisher handle, create SHM/MQ object.
+  \item \texttt{ipc\_publish(handle, const void *data)} --- write one message.
+  \item \texttt{ipc\_publish\_close(handle)} --- release handle, unlink SHM/MQ.
+  \item \texttt{ipc\_subscribe\_open(TopicId)} / \texttt{ipc\_recv(handle, void *out, int timeout\_ms)} / \texttt{ipc\_subscribe\_close}.
+\end{itemize}
+
+The C++ binding (\texttt{libipc/bindings/cpp/include/ipc/bus.hpp}) wraps these into RAII templates:
+\texttt{ipc::Publisher<T>} and \texttt{ipc::Subscriber<T>}, where \texttt{T} is the message struct type.
+Constructors call \texttt{open}; destructors call \texttt{close} automatically.
+
+\medskip
 \textbf{Python Binding}
+
+The Python binding (\texttt{libipc/bindings/python/ipc.py}) uses \texttt{ctypes} to call the shared library
+\texttt{liblibipc.so} at runtime. Message structs are defined in \texttt{ipc\_schema.py} as
+\texttt{ctypes.Structure} subclasses mirroring the C headers in \texttt{messages/}.
+Usage pattern:
+\begin{enumerate}
+  \item \texttt{import ipc, ipc\_schema} (after inserting the bindings path into \texttt{sys.path}).
+  \item \texttt{pub = ipc.Publisher(ipc\_schema.TopicId.LANE\_STATE)} --- open publisher.
+  \item Fill a \texttt{ipc\_schema.LaneState()} struct and call \texttt{pub.publish(msg)}.
+  \item \texttt{sub = ipc.Subscriber(ipc\_schema.TopicId.EGO\_STATE)}; \texttt{msg = sub.recv(timeout\_ms=100)}.
+\end{enumerate}
 
 % ------------------------------------------------------------
 \subsection{IO}

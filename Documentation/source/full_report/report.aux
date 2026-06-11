@@ -30,28 +30,45 @@
 \@writefile{toc}{\contentsline {section}{\numberline {2}Software}{6}{section.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Architecture}{6}{subsection.2.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {2.1.1}Embedded Platform}{6}{subsubsection.2.1.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Embedded Platform: NUCLEO reads sensors (I2C), drives actuators (PWM), communicates with Raspberry Pi 5 via UART}}{6}{figure.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.1.2}Brain}{6}{subsubsection.2.1.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Brain architecture: nodes communicate via IPC bus (SHM for latest-wins, MQ for queued messages)}}{6}{figure.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Embedded Platform}{6}{subsection.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.1}Peripheral}{6}{subsubsection.2.2.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces I2C transaction: START, 7-bit address (0x28), R/W bit, ACK}}{7}{figure.8}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces PWM signal: varying pulse width, fixed 50\,Hz period}}{7}{figure.9}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces UART frame: start bit, 8 data bits (LSB first), stop bit}}{7}{figure.10}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces STM32F401 clock tree (simplified): HSI/HSE → PLL → SYSCLK → APB buses}}{8}{figure.11}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Timer up-count mode: counter ramps to ARR, resets; PWM output high while CNT $<$ CCR}}{8}{figure.12}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.2}Sensor}{8}{subsubsection.2.2.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces BNO055 key registers}}{9}{table.6}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces AS5600 key registers}}{10}{table.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.3}Actuator}{10}{subsubsection.2.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Brain}{11}{subsection.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.1}Module Communication}{11}{subsubsection.2.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}IO}{11}{subsection.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.1}Perception}{11}{subsubsection.2.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.2}Localization}{12}{subsubsection.2.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.3}Planning}{12}{subsubsection.2.4.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.4}Control}{12}{subsubsection.2.4.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Monitor}{12}{subsection.2.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}Simulation}{12}{subsection.2.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}Source \& Description}{13}{section.3}\protected@file@percent }
-\gdef \@abspage@last{14}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Embedded Platform: NUCLEO reads sensors via I2C, drives actuators via PWM, communicates with Raspberry Pi 5 via UART}}{6}{figure.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.1.2}Brain}{7}{subsubsection.2.1.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Brain architecture: IO layer}}{7}{figure.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Embedded Platform}{8}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.1}Peripheral}{8}{subsubsection.2.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces I2C transaction: START, 7-bit address (0x28), R/W bit, ACK}}{8}{figure.8}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces \texttt  {I2C1\_Master\_Init()} register configuration}}{8}{table.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces \texttt  {I2C1\_WriteReg()} register sequence}}{9}{table.7}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces \texttt  {I2C1\_ReadMulti()} register sequence}}{9}{table.8}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces PWM signal: varying pulse width, fixed 50\,Hz period}}{9}{figure.9}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces \texttt  {PWM\_Init()} register configuration}}{10}{table.9}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Servo control functions and their CCR values}}{10}{table.10}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces UART frame: start bit, 8 data bits (LSB first), stop bit}}{11}{figure.10}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces \texttt  {UART1\_init()} register configuration}}{11}{table.11}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces \texttt  {UART2\_init()} register configuration}}{11}{table.12}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces UART transmit sequence}}{11}{table.13}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces STM32F401 clock tree (simplified): HSI/HSE → PLL → SYSCLK → APB buses}}{12}{figure.11}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Timer up-count mode: counter ramps to ARR, resets; PWM output high while CNT $<$ CCR}}{12}{figure.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.2}Sensor}{12}{subsubsection.2.2.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces BNO055 registers used in implementation}}{13}{table.14}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces \texttt  {BNO055\_Init()} I2C write sequence}}{13}{table.15}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {16}{\ignorespaces \texttt  {BNO055\_ReadEuler\_raw()} data decode}}{13}{table.16}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {17}{\ignorespaces \texttt  {CALIB\_STAT} bit fields}}{14}{table.17}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {18}{\ignorespaces AS5600 registers used in implementation}}{14}{table.18}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {19}{\ignorespaces \texttt  {AS5600\_ReadStatus()} operation}}{14}{table.19}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {20}{\ignorespaces \texttt  {AS5600\_ReadAngleRaw()} — returns 12-bit value 0--4095}}{14}{table.20}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {21}{\ignorespaces \texttt  {AS5600\_ReadAngularSpeedDeg()} algorithm}}{15}{table.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.3}Actuator}{15}{subsubsection.2.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Brain}{15}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.1}Module Communication}{15}{subsubsection.2.3.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {22}{\ignorespaces Linux IPC mechanism comparison}}{16}{table.22}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Pub/Sub model: publisher writes to the bus; multiple subscribers receive independently}}{17}{figure.13}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {23}{\ignorespaces Drop policies in \texttt  {libipc}}}{17}{table.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}IO}{18}{subsection.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.1}Perception}{18}{subsubsection.2.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.2}Localization}{19}{subsubsection.2.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.3}Planning}{19}{subsubsection.2.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.4}Control}{19}{subsubsection.2.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Monitor}{19}{subsection.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}Simulation}{19}{subsection.2.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Source \& Description}{19}{section.3}\protected@file@percent }
+\gdef \@abspage@last{20}
