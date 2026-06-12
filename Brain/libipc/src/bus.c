@@ -1,6 +1,6 @@
 #include "ipc/bus.h"
-#include "mq_transport.h"
-#include "shm.h"
+#include "ipc/mq_transport.h"
+#include "ipc/shm.h"
 #include <stdlib.h>
 #include <time.h>
 
