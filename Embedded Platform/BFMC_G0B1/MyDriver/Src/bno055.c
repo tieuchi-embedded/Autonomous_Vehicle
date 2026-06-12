@@ -39,11 +39,17 @@
 void BNO055_Init(void)
 {
     I2C1_WriteReg(BNO055_I2C_ADDR, BNO055_OPR_MODE, OPR_MODE_CONFIG);
+    Delay_t(25);
 
     I2C1_WriteReg(BNO055_I2C_ADDR, BNO055_PAGE_ID, 0x00);
     I2C1_WriteReg(BNO055_I2C_ADDR, BNO055_PWR_MODE, BNO055_PWR_NORMAL);
+    Delay_t(10);
+
+//    I2C1_WriteReg(BNO055_I2C_ADDR, 0x3F, 0x80);
+//    Delay_t(10);
 
     I2C1_WriteReg(BNO055_I2C_ADDR, BNO055_OPR_MODE, OPR_MODE_NDOF);
+    Delay_t(10);
 }
 
 uint8_t BNO055_ReadReg(uint8_t reg)
