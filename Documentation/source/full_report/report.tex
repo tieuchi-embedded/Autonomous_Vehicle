@@ -19,6 +19,9 @@
 
 \geometry{margin=2.5cm}
 
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
@@ -281,6 +284,9 @@ Role           & Controls front wheel steering angle \\
 \draw[arr] ([xshift=-6pt]cam_frame.south) -- ++(0,-0.6) -- (6.3,-2.95) -- ([xshift=-5pt]cam_lane.north);
 \draw[arr] ([xshift= 6pt]cam_frame.south) -- ++(0,-0.6) -- (11.5,-2.95) -- (od_cam.north);
 
+\draw[arr, cyan, dashed] (cam_lane.south) -- (lane_out.north);
+\draw[arr, cyan, dashed] (od_cam.south)   -- (od_out.north);
+
 % --- Topics ---
 \node[node, draw=green!60!black, dashed, text=green!60!black] (lane_state)   at (6.5,  -8.5) {LANE\_STATE};
 \node[node, draw=green!60!black, dashed, text=green!60!black] (object_state) at (11.5, -8.5) {OBJECT\_STATE};
@@ -298,8 +304,8 @@ Role           & Controls front wheel steering angle \\
 \draw[arr] (lane_state.south)  -| (loc_lane.north);
 \draw[arr] (ego_state.south)   -- ++(0, -1.0) -| (loc_ego.north);
 
-\draw[arr] (loc_ego.south)  -- (3.0, -11.6) -- (4.2, -11.6) -- ([xshift=-8pt]loc_out.north);
-\draw[arr] (loc_lane.south) -- (6.5, -11.6) -- (4.8, -11.6) -- ([xshift= 8pt]loc_out.north);
+\draw[arr, cyan, dashed] (loc_ego.south)  -- (3.0, -11.6) -- (4.2, -11.6) -- ([xshift=-8pt]loc_out.north);
+\draw[arr, cyan, dashed] (loc_lane.south) -- (6.5, -11.6) -- (4.8, -11.6) -- ([xshift= 8pt]loc_out.north);
 
 \node[node, draw=green!60!black, dashed, text=green!60!black] (location) at (4.5, -14.2) {LOCATION};
 \draw[arr] (loc_out.south) -- (location.north);
@@ -316,17 +322,22 @@ Role           & Controls front wheel steering angle \\
 \draw[arr] (lane_state.east) -- (8.6, -8.5) -- (plan_lane.north);
 \draw[arr] (object_state.south) -- (plan_obj.north);
 
+\draw[arr, cyan, dashed] (plan_loc.south)  -- (4.5, -17.2) -- (7.0, -17.2) -- ([xshift=-28pt]plan_out.north);
+\draw[arr, cyan, dashed] ([xshift=-13pt]plan_lane.south) -- ([xshift=4pt]plan_out.north);
+\draw[arr, cyan, dashed] (plan_obj.south)  -- (11.5,-17.2) -- (9.0, -17.2) -- ([xshift= 30pt]plan_out.north);
+
 \node[node, draw=green!60!black, dashed, text=green!60!black] (control_cmd_t) at (0.0, -8.5) {CONTROL};
 \node[node, draw=green!60!black, dashed, text=green!60!black] (behaviour_cmd) at (8.0, -20.0) {BEHAVIOUR\_CMD};
 \draw[arr] (plan_out.south) -- (behaviour_cmd.north);
 
 % --- Control node ---
 \node[node] (ctrl_bcmd) at (0.0, -20.0) {Behaviour Cmd};
-\node[node] (ctrl_ccmd) at (0.0, -19.0) {Control Cmd};
+\node[node] (ctrl_ccmd) at (0.0, -18.5) {Control Cmd};
 \node[group, fit=(ctrl_bcmd)(ctrl_ccmd)] (ctrl_box) {};
 \node[grplbl, above=5pt of ctrl_box] {Control};
 
 \draw[arr] (behaviour_cmd.west) -- (ctrl_bcmd.east);
+\draw[arr, cyan, dashed] (ctrl_bcmd.north) -- (ctrl_ccmd.south);
 \draw[arr] (ctrl_ccmd.north) -- (control_cmd_t.south);
 \draw[arr] (control_cmd_t.north) -- (ctrl_cmd.south);
 
@@ -342,7 +353,7 @@ Role           & Controls front wheel steering angle \\
 % ================================================================
 % ---- I2C ----
 % ================================================================
-\textbf{I2C (Inter-Integrated Circuit)}
+\paragraph{I2C (Inter-Integrated Circuit)}
 
 I2C is a two-wire synchronous serial protocol using a shared clock line (SCL) and a bidirectional data line (SDA).
 Communication is initiated by a START condition (SDA falls while SCL is high), followed by a 7-bit device address,
@@ -401,6 +412,20 @@ In this project, I2C1 (PB8=SCL, PB9=SDA) communicates with BNO055 (\texttt{0x28}
 \end{tikzpicture}
 \caption{I2C transaction: START, 7-bit address (0x28), R/W bit, ACK}
 \end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Function} & \textbf{Signature} & \textbf{Description} \\
+\hline
+\texttt{I2C1\_Master\_Init} & \texttt{(void)} & Configure I2C1 at 100\,kHz on PB8/PB9 \\
+\texttt{I2C1\_WriteReg}     & \texttt{(dev, reg, data)} & Write one byte to a device register \\
+\texttt{I2C1\_ReadMulti}    & \texttt{(dev, reg, buf, len)} & Read \texttt{len} bytes starting from \texttt{reg} \\
+\hline
+\end{tabular}
+\caption{I2C driver functions}
+\end{table}
 
 \textit{Function: \texttt{I2C1\_Master\_Init()}}
 
@@ -481,7 +506,7 @@ Sends register address (write phase), then Repeated START, reads \texttt{len} by
 \end{table}
 
 % ---- PWM ----
-\textbf{PWM (Pulse Width Modulation)}
+\paragraph{PWM (Pulse Width Modulation)}
 
 PWM generates a periodic digital signal with fixed frequency and variable duty cycle.
 The STM32 timer compares the counter value against a capture/compare register (CCR);
@@ -506,6 +531,22 @@ Typical servo period is 20\,ms (50\,Hz); pulse width 1--2\,ms maps to 0°--180°
 \end{tikzpicture}
 \caption{PWM signal: varying pulse width, fixed 50\,Hz period}
 \end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Function} & \textbf{Signature} & \textbf{Description} \\
+\hline
+\texttt{PWM\_Init}              & \texttt{(void)}    & Configure TIM2 CH1/CH2 at 50\,Hz on PA0/PA1 \\
+\texttt{Servo\_Speed\_Set}      & \texttt{(us)}      & Set ESC pulse width directly in \(\mu\)s (1000--2000) \\
+\texttt{Servo\_Steering\_Set}   & \texttt{(us)}      & Set steering pulse width directly in \(\mu\)s (1100--1900) \\
+\texttt{Servo\_Speed\_Set\_RPM} & \texttt{(rpm)}     & Convert RPM \([-500,+500]\) to CCR1 and write \\
+\texttt{Servo\_Steering\_Set\_Deg} & \texttt{(deg)}  & Convert angle \([-40°,+40°]\) to CCR2 and write \\
+\hline
+\end{tabular}
+\caption{PWM driver functions}
+\end{table}
 
 \textit{Function: \texttt{PWM\_Init()}}
 
@@ -556,7 +597,7 @@ Configures PA0 (TIM2\_CH1, speed servo) and PA1 (TIM2\_CH2, steering servo) as A
 \end{table}
 
 % ---- UART ----
-\textbf{UART (Universal Asynchronous Receiver/Transmitter)}
+\paragraph{UART (Universal Asynchronous Receiver/Transmitter)}
 
 UART is an asynchronous serial protocol with no shared clock.
 A frame consists of: 1 start bit (low), 8 data bits (LSB first), optional parity, and 1--2 stop bits (high).
@@ -590,6 +631,21 @@ The STM32 transmits sensor data to the Raspberry Pi 5 over UART in ASCII frames:
 \end{tikzpicture}
 \caption{UART frame: start bit, 8 data bits (LSB first), stop bit}
 \end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Function} & \textbf{Signature} & \textbf{Description} \\
+\hline
+\texttt{UART1\_init}      & \texttt{(void)}        & Configure USART1 (PA9/PA10) at 115200\,baud 8N1 \\
+\texttt{UART2\_init}      & \texttt{(void)}        & Configure USART2 (PA2/PA3) with RXNE interrupt \\
+\texttt{UART1\_Transmit}  & \texttt{(data)}        & Send one byte via USART1 TX \\
+\texttt{UART2\_Transmit}  & \texttt{(data)}        & Send one byte via USART2 TX \\
+\hline
+\end{tabular}
+\caption{UART driver functions}
+\end{table}
 
 \textit{Function: \texttt{UART1\_init()}} — PA9 TX, PA10 RX, AF7, 115200\,baud 8N1, PCLK2 = 16\,MHz.
 
@@ -655,7 +711,7 @@ The STM32 transmits sensor data to the Raspberry Pi 5 over UART in ASCII frames:
 \textit{ISR: \texttt{USART2\_IRQHandler()}} — Triggered on each received byte, reads \texttt{USART2->DR} to clear \texttt{RXNE}, passes byte to \texttt{UART\_Parse\_Byte()} which accumulates into a command buffer and calls \texttt{UART\_Parse\_Command()} on \texttt{;;} delimiter.
 
 % ---- RCC ----
-\textbf{RCC (Reset and Clock Control)}
+\paragraph{RCC (Reset and Clock Control)}
 
 The RCC peripheral on the STM32F401 manages system clock configuration and peripheral clock gating.
 The internal HSI oscillator (16\,MHz) or external HSE crystal can be fed into the PLL to generate
@@ -687,7 +743,7 @@ Each peripheral must have its bus clock explicitly enabled via \texttt{RCC\_APBx
 \end{figure}
 
 % ---- Timer ----
-\textbf{Timer}
+\paragraph{Timer}
 
 STM32 general-purpose timers (TIM2--TIM5) use an up-counter that increments each tick.
 The tick frequency is \(\frac{f_{APB} \times 2}{PSC+1}\); the counter resets at \texttt{ARR} (Auto-Reload Register),
@@ -726,10 +782,25 @@ In this project:
 \subsubsection{Sensor}
 
 % ================================================================
-\textbf{IMU: BNO055}
+\paragraph{IMU: BNO055}
 
 Communication: I2C, address \texttt{0x29} (ADDR pin high).
 The MCU is master; BNO055 is slave. Bus speed 100\,kHz matching \texttt{I2C1\_Master\_Init()}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Function} & \textbf{Signature} & \textbf{Description} \\
+\hline
+\texttt{BNO055\_Init}          & \texttt{(void)}          & Set NDOF fusion mode, configure axes \\
+\texttt{BNO055\_ReadEuler\_raw}& \texttt{(x, y, z)}       & Read raw Euler angles (yaw/pitch/roll) \\
+\texttt{BNO055\_ReadCalibStatus} & \texttt{(void)}        & Read \texttt{CALIB\_STAT} register (0x00--0xFF) \\
+\texttt{IMU\_HealthCheck}      & \texttt{(ex, ey, ez)}    & Detect stuck-zero fault; stop watchdog if faulty \\
+\hline
+\end{tabular}
+\caption{BNO055 driver functions}
+\end{table}
 
 \medskip
 \textit{Key registers used in implementation:}
@@ -821,10 +892,25 @@ the IMU is flagged as faulty and the watchdog (\texttt{Feed\_WD()}) stops being 
 \medskip
 
 % ================================================================
-\textbf{Encoder: AS5600}
+\paragraph{Encoder: AS5600}
 
 Communication: I2C, fixed address \texttt{0x36}. No init sequence required —
 the device is ready immediately after power-on. Only reading is performed at runtime.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Function} & \textbf{Signature} & \textbf{Description} \\
+\hline
+\texttt{AS5600\_ReadStatus}        & \texttt{(void)}        & Read STATUS register (magnet detection flags) \\
+\texttt{AS5600\_ReadAngleRaw}      & \texttt{(void)}        & Read 12-bit raw angle (0--4095) \\
+\texttt{AS5600\_ReadAngleDeg}      & \texttt{(void)}        & Convert raw angle to degrees (0--360°) \\
+\texttt{AS5600\_ReadAngularSpeedDeg} & \texttt{(dt\_sec)}   & Compute angular velocity (°/s) via finite difference \\
+\hline
+\end{tabular}
+\caption{AS5600 encoder driver functions}
+\end{table}
 
 \medskip
 \textit{Key registers used in implementation:}
@@ -902,26 +988,92 @@ Handles 0°/360° wrap-around by treating a delta $>2048$ or $<-2048$ as a wrap.
 
 \subsubsection{Actuator}
 
-\textbf{Steering: Angle 180 Servo}
-\begin{itemize}
-    \item \ldots
-\end{itemize}
+The vehicle uses two actuators driven by PWM signals from the STM32 at 50\,Hz:
+a position servo for steering and a brushless motor with ESC for propulsion.
+Both are commanded via \texttt{TIM2} (PA0/PA1, AF1), configured with \(PSC=15\), \(ARR=19999\)
+so that CCR units map directly to microseconds (1\,tick = 1\,\(\mu\)s).
 
-\textbf{Motivation: Brushless Motor \& ESC}
-\begin{itemize}
-    \item \ldots
-\end{itemize}
+% ---- Steering Servo ----
+\paragraph{Steering: 180° PWM Servo}
+
+The front axle is steered by a standard RC position servo.
+The STM32 writes the desired pulse width to \texttt{TIM2->CCR2} (PA1, TIM2\_CH2).
+Center position corresponds to 1500\,\(\mu\)s; each degree of steering offset maps to
+10\,\(\mu\)s, giving an effective range of \(\pm40°\) (1100--1900\,\(\mu\)s).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\hline
+\textbf{Property} & \textbf{Value} \\
+\hline
+Type           & PWM position servo (180°) \\
+Control signal & PWM 50\,Hz, pulse width 1.1--1.9\,ms \\
+Center (straight) & 1500\,\(\mu\)s \\
+Angular mapping & \(CCR2 = 1500 + \lfloor \theta_{deg} \times 10 \rfloor\), \(\theta \in [-40°,+40°]\) \\
+Supply voltage & 5\,V \\
+STM32 pin      & PA1 — TIM2\_CH2 \\
+\hline
+\end{tabular}
+\caption{Steering servo specifications and CCR mapping}
+\end{table}
+
+The Brain publishes a \texttt{ControlCmd} message with field \texttt{steer\_deg} \(\in [-30°, +30°]\)
+(positive = right, negative = left).
+The STM32 receives this value over UART and calls
+\texttt{Servo\_Steering\_Set\_Deg(deg)}, which writes \(1500 + \lfloor deg \times 10 \rfloor\)
+to \texttt{TIM2->CCR2}.
+
+% ---- ESC / Brushless Motor ----
+\paragraph{Propulsion: Brushless Motor \& ESC}
+
+The rear axle is driven by a brushless DC (BLDC) motor connected through a
+7:1 gear reduction to the rear wheels (wheel radius 6.5\,cm).
+Speed is commanded via an Electronic Speed Controller (ESC) that accepts the same
+50\,Hz PWM protocol as a servo: 1500\,\(\mu\)s = neutral/brake, values below 1500 reverse,
+values above 1500 drive forward.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\hline
+\textbf{Property} & \textbf{Value} \\
+\hline
+Motor type      & Brushless DC (BLDC) \\
+Speed controller & ESC, PWM 50\,Hz \\
+Neutral / brake  & 1500\,\(\mu\)s \\
+Forward range    & 1500--2000\,\(\mu\)s \\
+Reverse range    & 1500--1000\,\(\mu\)s \\
+RPM mapping     & \(CCR1 = 1500 - \lfloor rpm \rfloor\), \(rpm \in [-500, +500]\) \\
+Gear ratio      & 7:1 (motor to wheel) \\
+Wheel radius    & 6.5\,cm \\
+Speed equation  & \(v\,[\text{cm/s}] = \dfrac{rpm}{7} \times 2\pi \times 6.5 / 60\) \\
+STM32 pin       & PA0 — TIM2\_CH1 \\
+\hline
+\end{tabular}
+\caption{Brushless motor and ESC specifications}
+\end{table}
+
+The Brain publishes \texttt{ControlCmd.rpm} \(\in [-500, +500]\) (positive = forward).
+The STM32 calls \texttt{Servo\_Speed\_Set\_RPM(rpm)}, writing
+\(1500 - \lfloor rpm \rfloor\) to \texttt{TIM2->CCR1}.
+Motor RPM feedback is read back via the AS5600 encoder on the rear axle and
+reported to the Brain in the \texttt{@RPM:value;;\textbackslash r\textbackslash n} UART frame,
+where actual wheel speed is recovered as:
+\[
+  v = \frac{rpm_{\text{motor}}}{7} \times 2\pi \times 0.065 \;\text{[m/s]}
+\]
 
 % ------------------------------------------------------------
 \subsection{Brain}
 
 \subsubsection{Module Communication}
 
-\textbf{Kernel}
+\paragraph{Kernel}
 
 \ldots
 
-\textbf{Inter Process Communication}
+\paragraph{Inter Process Communication}
 
 Inter-Process Communication (IPC) refers to mechanisms that allow independent OS processes to exchange data.
 On Linux, the kernel provides several IPC primitives, each with different trade-offs in latency, throughput,
@@ -969,8 +1121,7 @@ This project implements two transports inside \texttt{libipc}:
         Used for high-rate sensor data where stale frames are discarded (e.g.\ \texttt{CAMERA\_FRAME}, \texttt{EGO\_STATE}).
 \end{itemize}
 
-\medskip
-\textbf{Pub/Sub Model}
+\paragraph{Pub/Sub Model}
 
 The project adopts a publish/subscribe pattern on top of the two transports.
 Each logical data stream is identified by a \emph{topic}; nodes are decoupled — a publisher does not know
@@ -1007,8 +1158,7 @@ who is listening, and a subscriber does not know the publisher's identity.
 \caption{Pub/Sub model: publisher writes to the bus; multiple subscribers receive independently}
 \end{figure}
 
-\medskip
-\textbf{Drop Policy}
+\paragraph{Drop Policy}
 
 Drop policy defines what happens when a new message arrives and the buffer is full, or when a subscriber
 reads slower than the publisher writes.
@@ -1029,8 +1179,7 @@ reads slower than the publisher writes.
 
 In this project all SHM topics use \texttt{NEVER} (latest-wins); MQ topics use \texttt{NEW} (block new if full).
 
-\medskip
-\textbf{C API / C++ Binding}
+\paragraph{C API / C++ Binding}
 
 The C API (\texttt{libipc/include/ipc/bus.h}) exposes four functions:
 \begin{itemize}
@@ -1044,8 +1193,7 @@ The C++ binding (\texttt{libipc/bindings/cpp/include/ipc/bus.hpp}) wraps these i
 \texttt{ipc::Publisher<T>} and \texttt{ipc::Subscriber<T>}, where \texttt{T} is the message struct type.
 Constructors call \texttt{open}; destructors call \texttt{close} automatically.
 
-\medskip
-\textbf{Python Binding}
+\paragraph{Python Binding}
 
 The Python binding (\texttt{libipc/bindings/python/ipc.py}) uses \texttt{ctypes} to call the shared library
 \texttt{liblibipc.so} at runtime. Message structs are defined in \texttt{ipc\_schema.py} as
@@ -1058,8 +1206,62 @@ Usage pattern:
   \item \texttt{sub = ipc.Subscriber(ipc\_schema.TopicId.EGO\_STATE)}; \texttt{msg = sub.recv(timeout\_ms=100)}.
 \end{enumerate}
 
+\paragraph{Node/Topic}~
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Publisher node} & \textbf{Topic} & \textbf{Subscriber node} \\
+\hline
+serial            & \texttt{SERIAL}         & state \\
+camera            & \texttt{CAMERA\_FRAME}  & lane, object\_detection \\
+state             & \texttt{EGO\_STATE}     & localization \\
+lane              & \texttt{LANE\_STATE}    & localization, planning \\
+object\_detection & \texttt{OBJECT\_STATE}  & planning \\
+localization      & \texttt{LOCATION}       & planning \\
+planning          & \texttt{BEHAVIOUR\_CMD} & control \\
+control           & \texttt{CONTROL\_CMD}   & serial(IO out) \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llllp{5cm}}
+\hline
+\textbf{Topic} & \textbf{Message} & \textbf{Transport} & \textbf{Drop Policy} & \textbf{Fields} \\
+\hline
+\texttt{SERIAL}
+  & \texttt{SerialData}  & MQ  & OLD
+  & \texttt{yaw, pitch, roll,} \newline \texttt{wx, wy, wz,} \newline \texttt{ax, ay, az, rpm} \\
+\texttt{CAMERA\_FRAME}
+  & \texttt{CameraFrame} & SHM & NEW
+  & \texttt{width, height,} \newline \texttt{stride, fmt, data\_size} \\
+\texttt{EGO\_STATE}
+  & \texttt{EgoState}    & MQ  & OLD
+  & \texttt{time\_ms, angle, speed} \\
+\texttt{LANE\_STATE}
+  & \texttt{LaneState}   & SHM & NEW
+  & \texttt{heading\_err\_rad,} \newline \texttt{lateral\_offset\_m} \\
+\texttt{OBJECT\_STATE}
+  & \texttt{Detections}  & MQ  & NEW
+  & \ldots \\
+\texttt{LOCATION}
+  & \texttt{Pose2D}      & MQ  & OLD
+  & \texttt{x, y, heading} \\
+\texttt{BEHAVIOUR\_CMD}
+  & \texttt{BehaviorCmd} & MQ  & NEVER
+  & \texttt{target\_speed,} \newline \texttt{target\_heading, mode} \\
+\texttt{CONTROL\_CMD}
+  & \texttt{ControlCmd}  & MQ  & NEW
+  & \texttt{rpm, steer\_deg} \\
+\hline
+\end{tabular}
+\caption{Topic descriptors}
+\end{table}
+
 % ------------------------------------------------------------
-\subsection{IO}
+\subsubsection{IO}
 
 \begin{itemize}
     \item Serial Bridge
@@ -1068,40 +1270,250 @@ Usage pattern:
 
 \subsubsection{Perception}
 
-\textbf{Camera}
+The perception layer turns raw sensor streams (camera frames, serial telemetry)
+into structured world state that the planning layer can reason about.
+Each perception module is an independent node communicating over \texttt{libipc}.
+
+% ================================================================
+\paragraph{Camera}
+
+The camera module is the entry point of the visual pipeline. It acquires image
+frames and publishes them to a shared-memory topic so downstream vision nodes
+(lane detection, object detection) can read the latest frame without copying.
+During development the real camera is replaced by a video simulator
+(\texttt{camera\_sim}) that decodes an MP4 file and emits frames at the
+source frame rate; the hardware capture node (libcamera) is planned but not yet
+implemented.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Node} & \textbf{Subscribe} & \textbf{Publish} \\
+\hline
+\texttt{camera\_sim} & --- (reads MP4 file) & \texttt{CAMERA\_FRAME} (SHM) \\
+\hline
+\end{tabular}
+\caption{Camera node communication}
+\end{table}
+
+\textit{Algorithm theory.}
+Video decoding extracts successive frames from an encoded stream; spatial
+resizing maps each frame onto a fixed grid using bilinear interpolation. The
+frame is then exposed through shared memory using a \emph{latest-wins} policy:
+the publisher overwrites a fixed slot and the subscriber always reads the most
+recent frame, which is the correct semantic for high-rate sensor data where
+stale frames are useless.
+
+\textit{Application in project.}
+Each frame is resized to $320 \times 180$ BGR (3 channels, \texttt{stride} $=960$
+bytes, \texttt{fmt}$=0$) and written to \texttt{CAMERA\_FRAME} (SHM, depth $=3$,
+drop policy NEW). The payload size is \texttt{sizeof(CameraFrame)} plus
+\texttt{stride}$\times$\texttt{height} pixel bytes. The simulator loops the
+video on end-of-file and sleeps to match the source frame rate (default
+30\,fps).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\hline
+\textbf{Function} & \textbf{Description} \\
+\hline
+\texttt{cv::VideoCapture::read} & Decode the next frame from the MP4 file \\
+\texttt{cv::resize}             & Resize the frame to $320 \times 180$ \\
+\texttt{ipc\_publish\_open}     & Open the \texttt{CAMERA\_FRAME} SHM publisher \\
+\texttt{ipc\_publish}           & Write the frame (header + pixels) to SHM \\
+\texttt{ipc\_publish\_close}    & Release the publisher and unlink the SHM object \\
+\hline
+\end{tabular}
+\caption{Camera node functions}
+\end{table}
+
+% ================================================================
+\paragraph{Lane Detection}
+
+The lane-detection module receives a camera frame and estimates the vehicle's
+position relative to the lane. It outputs two scalars: the \emph{heading error}
+(angle between the lane tangent and the vehicle's longitudinal axis) and the
+\emph{lateral offset} (signed distance from the lane center). These feed the
+lateral controller for lane following.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Node} & \textbf{Subscribe} & \textbf{Publish} \\
+\hline
+\texttt{lane} & \texttt{CAMERA\_FRAME} (SHM) & \texttt{LANE\_STATE} (SHM) \\
+\hline
+\end{tabular}
+\caption{Lane node communication}
+\end{table}
+
+\textit{Algorithm theory.}
+The pipeline combines several classical computer-vision techniques:
 \begin{itemize}
-    \item Input
-    \item Output
-    \item Algorithm
+  \item \textbf{Inverse Perspective Mapping (IPM)} --- a homography that warps the
+        forward-facing camera view into a top-down (bird's-eye) view, in which
+        parallel lane lines remain parallel and curvature is measurable.
+  \item \textbf{HLS color thresholding} --- converting to the HLS color space and
+        thresholding the Lightness (L) channel isolates bright lane markings
+        from the dark road surface.
+  \item \textbf{Histogram peak detection} --- summing white pixels per column over
+        the lower half of the image locates the left/right lane bases.
+  \item \textbf{Sliding-window tracking} --- starting from each base, a vertical
+        stack of windows follows the lane upward, re-centering on the pixel mean.
+  \item \textbf{Least-squares line fit} --- the collected pixels are fit to a line
+        $x = b\,y + c$ via the normal-equation / SVD solver.
+  \item \textbf{Exponential moving average (EMA)} --- temporal smoothing reduces
+        frame-to-frame jitter in the output.
 \end{itemize}
 
-\textbf{Lane Detection}
-\begin{itemize}
-    \item Input
-    \item Output
-    \item Algorithm
-\end{itemize}
+\textit{Application in project.}
+The node runs the following pipeline on every frame:
 
-\textbf{Object Detection}
-\begin{itemize}
-    \item Input
-    \item Output
-    \item Algorithm
-\end{itemize}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw, fill=white, minimum width=1.9cm, minimum height=0.8cm,
+              font=\footnotesize, align=center},
+  arr/.style={-{Stealth}, thick},
+  node distance=0.45cm and 0.5cm,
+]
+  \node[box] (frame)  {Camera\\Frame};
+  \node[box, right=of frame]  (ipm)    {IPM\\warp};
+  \node[box, right=of ipm]    (bin)    {HLS\\binary};
+  \node[box, right=of bin]    (hist)   {Histogram\\+ window};
+  \node[box, below=0.8cm of hist] (fit) {Line fit\\$x{=}b y{+}c$};
+  \node[box, left=of fit]     (ho)     {Heading\\/ offset};
+  \node[box, left=of ho]      (ema)    {EMA\\smooth};
+  \node[box, left=of ema]     (out)    {\texttt{LANE\_}\\\texttt{STATE}};
 
-\textbf{State}
-\begin{itemize}
-    \item Input
-    \item Output
-    \item Algorithm
-\end{itemize}
+  \draw[arr] (frame) -- (ipm);
+  \draw[arr] (ipm)   -- (bin);
+  \draw[arr] (bin)   -- (hist);
+  \draw[arr] (hist)  -- (fit);
+  \draw[arr] (fit)   -- (ho);
+  \draw[arr] (ho)    -- (ema);
+  \draw[arr] (ema)   -- (out);
+\end{tikzpicture}
+\caption{Lane detection pipeline}
+\end{figure}
+
+The IPM trapezoid, color threshold, and window parameters are tuned for the
+$320 \times 180$ frame:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Stage} & \textbf{Parameter} & \textbf{Value} \\
+\hline
+IPM source (top)    & \texttt{TL\_X}, \texttt{TR\_X}, \texttt{TOP\_Y} & $0.20$, $0.80$, $0.50$ \\
+IPM source (bottom) & \texttt{BL\_X}, \texttt{BR\_X}, \texttt{BOT\_Y} & $0.00$, $1.00$, $0.80$ \\
+Binary mask         & \texttt{L\_MIN}, \texttt{L\_MAX} (HLS L)       & $200$, $255$ \\
+Sliding window      & \texttt{N\_WINDOWS}, \texttt{MARGIN}, \texttt{MIN\_PIX} & $9$, $40$\,px, $30$ \\
+Smoothing           & \texttt{ALPHA} (EMA)                           & $0.7$ \\
+Scale               & \texttt{PIXEL\_TO\_M} (uncalibrated)           & $0.005$ \\
+\hline
+\end{tabular}
+\caption{Lane detection parameters}
+\end{table}
+
+After fitting the lane line $x = b\,y + c$, the heading error is the angle of
+the line with respect to the vertical axis, and the lateral offset is the
+horizontal distance between the lane reference and the image center (the
+vehicle body), scaled to meters:
+\[
+  \text{heading\_err} = \arctan(b),
+  \qquad
+  \text{lateral\_offset} = \bigl(x_{\text{lane}}\big|_{y=h-1} - \tfrac{w}{2}\bigr)\cdot \texttt{PIXEL\_TO\_M}.
+\]
+The right lane is preferred; when both lanes are detected the reference $x$ is
+the midpoint of the two fitted lines, otherwise the node falls back to the left
+lane. The raw result is then filtered:
+\[
+  o_t = \alpha\, o_{t-1} + (1-\alpha)\, o_t^{\text{raw}}, \qquad \alpha = 0.7,
+\]
+applied independently to heading error and lateral offset. On detection
+failure the previous smoothed value is held.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\hline
+\textbf{Function} & \textbf{Description} \\
+\hline
+\texttt{ipm\_matrix(w,h)}      & Build the perspective transform from the source trapezoid \\
+\texttt{ipm(src,M)}            & Warp the frame to a bird's-eye view \\
+\texttt{binary\_mask(bgr)}     & HLS L-channel threshold $\rightarrow$ binary image \\
+\texttt{ipm\_src\_points(w,h)} & Return the 4 trapezoid points (debug overlay) \\
+\texttt{detect(bw)}            & Histogram + sliding window + line fit $\rightarrow$ \texttt{DetectResult} \\
+\texttt{Tracker::smooth(cur)}  & EMA filter across consecutive frames \\
+\hline
+\end{tabular}
+\caption{Lane detection functions}
+\end{table}
+
+% ================================================================
+\paragraph{Object Detection}
+
+\textit{Planned:} run a YOLOv8n model (ONNX) on \texttt{CAMERA\_FRAME} and publish
+detected object class and distance to the \texttt{DETECTIONS} topic.
+Not yet implemented.
+
+% ================================================================
+\paragraph{State}
+
+The state module fuses the raw serial telemetry from the STM32 into a compact
+ego-vehicle state. It converts the IMU yaw angle and the motor RPM into the
+vehicle's heading and linear speed, which localization and control consume.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Node} & \textbf{Subscribe} & \textbf{Publish} \\
+\hline
+\texttt{state} & \texttt{SERIAL} (MQ) & \texttt{EGO\_STATE} (MQ) \\
+\hline
+\end{tabular}
+\caption{State node communication}
+\end{table}
+
+\textit{Algorithm theory.}
+Linear speed is derived from the motor angular velocity through the drivetrain:
+dividing motor RPM by the gear ratio yields wheel RPM, and multiplying by the
+wheel circumference converts to linear velocity. The heading angle is taken
+directly from the on-chip fused yaw of the IMU.
+
+\textit{Application in project.}
+With a gear ratio of $7{:}1$ and wheel radius $6.5$\,cm, the node computes:
+\[
+  \text{angle} = \text{yaw}, \qquad
+  \text{speed} = \frac{\text{rpm}}{7} \cdot 2\pi \cdot \frac{6.5}{60}\;\,[\text{cm/s}].
+\]
+The published \texttt{EgoState} also carries \texttt{time\_ms}, the milliseconds
+elapsed since the node started.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\hline
+\textbf{Function} & \textbf{Description} \\
+\hline
+\texttt{StateEstimator::update(s)}  & Update angle/speed from a \texttt{SerialData} sample \\
+\texttt{StateEstimator::snapshot()} & Return the current \texttt{EgoState} (with \texttt{time\_ms}) \\
+\hline
+\end{tabular}
+\caption{State node functions}
+\end{table}
 
 \subsubsection{Localization}
-\begin{itemize}
-    \item Input
-    \item Output
-    \item Algorithm
-\end{itemize}
+
+\textit{Planned:} dead reckoning from \texttt{EGO\_STATE} (integrating speed and
+heading over time) to produce a 2D pose published on the \texttt{POSE2D} topic.
+Not yet implemented.
 
 \subsubsection{Planning}
 \begin{itemize}

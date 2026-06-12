@@ -5,15 +5,35 @@
 \contentsline {subsubsection}{\numberline {2.1.2}Brain}{7}{subsubsection.2.1.2}%
 \contentsline {subsection}{\numberline {2.2}Embedded Platform}{8}{subsection.2.2}%
 \contentsline {subsubsection}{\numberline {2.2.1}Peripheral}{8}{subsubsection.2.2.1}%
-\contentsline {subsubsection}{\numberline {2.2.2}Sensor}{12}{subsubsection.2.2.2}%
-\contentsline {subsubsection}{\numberline {2.2.3}Actuator}{15}{subsubsection.2.2.3}%
-\contentsline {subsection}{\numberline {2.3}Brain}{15}{subsection.2.3}%
-\contentsline {subsubsection}{\numberline {2.3.1}Module Communication}{15}{subsubsection.2.3.1}%
-\contentsline {subsection}{\numberline {2.4}IO}{18}{subsection.2.4}%
-\contentsline {subsubsection}{\numberline {2.4.1}Perception}{18}{subsubsection.2.4.1}%
-\contentsline {subsubsection}{\numberline {2.4.2}Localization}{19}{subsubsection.2.4.2}%
-\contentsline {subsubsection}{\numberline {2.4.3}Planning}{19}{subsubsection.2.4.3}%
-\contentsline {subsubsection}{\numberline {2.4.4}Control}{19}{subsubsection.2.4.4}%
-\contentsline {subsection}{\numberline {2.5}Monitor}{19}{subsection.2.5}%
-\contentsline {subsection}{\numberline {2.6}Simulation}{19}{subsection.2.6}%
-\contentsline {section}{\numberline {3}Source \& Description}{19}{section.3}%
+\contentsline {paragraph}{\numberline {2.2.1.1}I2C (Inter-Integrated Circuit)}{8}{paragraph.2.2.1.1}%
+\contentsline {paragraph}{\numberline {2.2.1.2}PWM (Pulse Width Modulation)}{9}{paragraph.2.2.1.2}%
+\contentsline {paragraph}{\numberline {2.2.1.3}UART (Universal Asynchronous Receiver/Transmitter)}{11}{paragraph.2.2.1.3}%
+\contentsline {paragraph}{\numberline {2.2.1.4}RCC (Reset and Clock Control)}{12}{paragraph.2.2.1.4}%
+\contentsline {paragraph}{\numberline {2.2.1.5}Timer}{13}{paragraph.2.2.1.5}%
+\contentsline {subsubsection}{\numberline {2.2.2}Sensor}{13}{subsubsection.2.2.2}%
+\contentsline {paragraph}{\numberline {2.2.2.1}IMU: BNO055}{13}{paragraph.2.2.2.1}%
+\contentsline {paragraph}{\numberline {2.2.2.2}Encoder: AS5600}{15}{paragraph.2.2.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.3}Actuator}{16}{subsubsection.2.2.3}%
+\contentsline {paragraph}{\numberline {2.2.3.1}Steering: 180° PWM Servo}{16}{paragraph.2.2.3.1}%
+\contentsline {paragraph}{\numberline {2.2.3.2}Propulsion: Brushless Motor \& ESC}{17}{paragraph.2.2.3.2}%
+\contentsline {subsection}{\numberline {2.3}Brain}{17}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Module Communication}{17}{subsubsection.2.3.1}%
+\contentsline {paragraph}{\numberline {2.3.1.1}Kernel}{17}{paragraph.2.3.1.1}%
+\contentsline {paragraph}{\numberline {2.3.1.2}Inter Process Communication}{17}{paragraph.2.3.1.2}%
+\contentsline {paragraph}{\numberline {2.3.1.3}Pub/Sub Model}{18}{paragraph.2.3.1.3}%
+\contentsline {paragraph}{\numberline {2.3.1.4}Drop Policy}{19}{paragraph.2.3.1.4}%
+\contentsline {paragraph}{\numberline {2.3.1.5}C API / C++ Binding}{19}{paragraph.2.3.1.5}%
+\contentsline {paragraph}{\numberline {2.3.1.6}Python Binding}{20}{paragraph.2.3.1.6}%
+\contentsline {paragraph}{\numberline {2.3.1.7}Node/Topic}{20}{paragraph.2.3.1.7}%
+\contentsline {subsubsection}{\numberline {2.3.2}IO}{20}{subsubsection.2.3.2}%
+\contentsline {subsubsection}{\numberline {2.3.3}Perception}{21}{subsubsection.2.3.3}%
+\contentsline {paragraph}{\numberline {2.3.3.1}Camera}{21}{paragraph.2.3.3.1}%
+\contentsline {paragraph}{\numberline {2.3.3.2}Lane Detection}{21}{paragraph.2.3.3.2}%
+\contentsline {paragraph}{\numberline {2.3.3.3}Object Detection}{23}{paragraph.2.3.3.3}%
+\contentsline {paragraph}{\numberline {2.3.3.4}State}{23}{paragraph.2.3.3.4}%
+\contentsline {subsubsection}{\numberline {2.3.4}Localization}{23}{subsubsection.2.3.4}%
+\contentsline {subsubsection}{\numberline {2.3.5}Planning}{24}{subsubsection.2.3.5}%
+\contentsline {subsubsection}{\numberline {2.3.6}Control}{24}{subsubsection.2.3.6}%
+\contentsline {subsection}{\numberline {2.4}Monitor}{24}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Simulation}{24}{subsection.2.5}%
+\contentsline {section}{\numberline {3}Source \& Description}{24}{section.3}%
