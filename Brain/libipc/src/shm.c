@@ -57,11 +57,11 @@ static int do_open(TopicId id, size_t payload_size, int create, ShmHandle* out) 
     return 0;
 }
 
-int shm_open_pub(TopicId id, size_t payload_size, ShmHandle* out) {
+int shm_publish(TopicId id, size_t payload_size, ShmHandle* out) {
     return do_open(id, payload_size, 1, out);
 }
 
-int shm_open_sub(TopicId id, ShmHandle* out) {
+int shm_subscribe(TopicId id, ShmHandle* out) {
     const TopicDescriptor* td = topic_get(id);
     if (!td) return -1;
 
@@ -102,7 +102,7 @@ int shm_open_sub(TopicId id, ShmHandle* out) {
     return 0;
 }
 
-int shm_write(ShmHandle* h, const void* data, size_t size) {
+int shm_push(ShmHandle* h, const void* data, size_t size) {
     ShmHeader* hdr = (ShmHeader*)h->map;
     uint32_t seq  = __atomic_load_n(&hdr->write_seq, __ATOMIC_RELAXED);
     uint32_t slot = seq % h->n_slots;
@@ -114,7 +114,7 @@ int shm_write(ShmHandle* h, const void* data, size_t size) {
 }
 
 // returns 1 if new data available, 0 if no new data
-int shm_read(ShmHandle* h, void* buf, size_t size, uint32_t* last_seq) {
+int shm_pull(ShmHandle* h, void* buf, size_t size, uint32_t* last_seq) {
     ShmHeader* hdr     = (ShmHeader*)h->map;
     uint32_t   cur_seq = __atomic_load_n(&hdr->write_seq, __ATOMIC_ACQUIRE);
     if (cur_seq == *last_seq) return 0;
@@ -126,7 +126,7 @@ int shm_read(ShmHandle* h, void* buf, size_t size, uint32_t* last_seq) {
     return 1;
 }
 
-void shm_close(ShmHandle* h) {
+void shm_disconnect(ShmHandle* h) {
     if (h->map && h->map != MAP_FAILED) {
         munmap(h->map, h->map_size);
         h->map = NULL;
@@ -137,7 +137,7 @@ void shm_close(ShmHandle* h) {
     }
 }
 
-void shm_unlink_topic(TopicId id) {
+void shm_remove(TopicId id) {
     const TopicDescriptor* td = topic_get(id);
     if (td) shm_unlink(td->name);
 }

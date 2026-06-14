@@ -6,22 +6,18 @@ import ctypes as ct
 
 
 # TopicId — must match libipc/include/ipc/topic.h
-INVALID      = 0
-CAMERA_FRAME = 1
-IMU_STATE    = 2
-WHEEL_ODOM   = 3
-EGO_STATE    = 4
-LANE_STATE   = 5
-CONTROL_CMD  = 6
+INVALID       = 0
+CAMERA_FRAME  = 1
+EGO_STATE     = 2
+LANE_STATE    = 3
+CONTROL_CMD   = 4
+OBJECT_STATE  = 5
+BEHAVIOUR_CMD = 6
+LOCATION      = 7
 
 # TransportKind
 SHM = 1
 MQ  = 2
-
-# DropPolicy
-DROP_NEW   = 1
-DROP_OLD   = 2
-DROP_NEVER = 3
 
 
 class MessageHeader(ct.Structure):
@@ -32,36 +28,14 @@ class MessageHeader(ct.Structure):
     ]
 
 
-class ImuState(ct.Structure):
-    _fields_ = [
-        ("h",     MessageHeader),
-        ("roll",  ct.c_float),
-        ("pitch", ct.c_float),
-        ("yaw",   ct.c_float),
-        ("wx",    ct.c_float),
-        ("wy",    ct.c_float),
-        ("wz",    ct.c_float),
-        ("ax",    ct.c_float),
-        ("ay",    ct.c_float),
-        ("az",    ct.c_float),
-    ]
-
-
-class WheelOdom(ct.Structure):
-    _fields_ = [
-        ("h",     MessageHeader),
-        ("speed", ct.c_float),
-        ("ticks", ct.c_int32),
-        ("dist",  ct.c_float),
-    ]
-
-
 class EgoState(ct.Structure):
+    """Raw vehicle telemetry from the serial port."""
     _fields_ = [
         ("h",     MessageHeader),
         ("yaw",   ct.c_float),
         ("pitch", ct.c_float),
         ("roll",  ct.c_float),
+        ("rpm",   ct.c_float),
     ]
 
 
@@ -69,15 +43,42 @@ class LaneState(ct.Structure):
     _fields_ = [
         ("h",               MessageHeader),
         ("heading_err_rad", ct.c_float),
+        ("offset_cm",       ct.c_float),
     ]
 
 
 class ControlCmd(ct.Structure):
     _fields_ = [
-        ("h",        MessageHeader),
-        ("speed",    ct.c_float),
-        ("steering", ct.c_float),
-        ("brake",    ct.c_float),
+        ("h",         MessageHeader),
+        ("rpm",       ct.c_float),
+        ("steer_deg", ct.c_float),
+    ]
+
+
+class ObjectState(ct.Structure):
+    _fields_ = [
+        ("h",          MessageHeader),
+        ("cls",        ct.c_uint32),
+        ("distance",   ct.c_float),
+        ("confidence", ct.c_float),
+    ]
+
+
+class BehaviourCmd(ct.Structure):
+    _fields_ = [
+        ("h",              MessageHeader),
+        ("target_speed",   ct.c_float),
+        ("target_heading", ct.c_float),
+        ("mode",           ct.c_uint32),
+    ]
+
+
+class Location(ct.Structure):
+    _fields_ = [
+        ("h",       MessageHeader),
+        ("x",       ct.c_float),
+        ("y",       ct.c_float),
+        ("heading", ct.c_float),
     ]
 
 
@@ -94,10 +95,11 @@ class CameraFrame(ct.Structure):
 
 
 TOPIC_STRUCT = {
-    CAMERA_FRAME: CameraFrame,
-    IMU_STATE:    ImuState,
-    WHEEL_ODOM:   WheelOdom,
-    EGO_STATE:    EgoState,
-    LANE_STATE:   LaneState,
-    CONTROL_CMD:  ControlCmd,
+    CAMERA_FRAME:  CameraFrame,
+    EGO_STATE:     EgoState,
+    LANE_STATE:    LaneState,
+    CONTROL_CMD:   ControlCmd,
+    OBJECT_STATE:  ObjectState,
+    BEHAVIOUR_CMD: BehaviourCmd,
+    LOCATION:      Location,
 }

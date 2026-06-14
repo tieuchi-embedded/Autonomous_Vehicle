@@ -1,11 +1,16 @@
+/* SPDX-License-Identifier: MIT */
+/*
+ * mq.c - POSIX message queue transport implementation. See ipc/mq.h.
+ */
 #define _POSIX_C_SOURCE 200809L
-#include "ipc/mq_transport.h"
+#include "ipc/mq.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
+/* read_sys_limit() - Read a long from a sysfs/procfs file, or @fallback. */
 static long read_sys_limit(const char* path, long fallback) {
     FILE* f = fopen(path, "r");
     if (!f) return fallback;
@@ -15,6 +20,12 @@ static long read_sys_limit(const char* path, long fallback) {
     return v;
 }
 
+/*
+ * open_mq() - Common open path for both pub and sub.
+ * Builds the mq_attr from the topic descriptor, clamping the requested depth
+ * to the system's mqueue/msg_max, then mq_open()s the named queue with
+ * @flags | O_CREAT.
+ */
 static int open_mq(TopicId id, int flags, MqHandle* out) {
     const TopicDescriptor* td = topic_get(id);
     if (!td) return -1;
@@ -35,42 +46,26 @@ static int open_mq(TopicId id, int flags, MqHandle* out) {
     return 0;
 }
 
-int mq_transport_open_pub(TopicId id, MqHandle* out) {
+int mq_publish(TopicId id, MqHandle* out) {
     return open_mq(id, O_WRONLY, out);
 }
 
-int mq_transport_open_sub(TopicId id, MqHandle* out) {
+int mq_subscribe(TopicId id, MqHandle* out) {
     return open_mq(id, O_RDWR, out);
 }
 
-int mq_transport_send(MqHandle* h, const TopicDescriptor* td, const void* msg, size_t size) {
-    switch (td->drop) {
-        case NEW: {
-            if (mq_timedsend(h->mqd, msg, size, 0, &(struct timespec){0,0}) == 0) return 0;
-            if (errno != ETIMEDOUT && errno != EAGAIN) return -1;
-            char dummy[td->payload_size];
-            mq_receive(h->mqd, dummy, td->payload_size, NULL);
-            return mq_timedsend(h->mqd, msg, size, 0, &(struct timespec){0,0}) == 0 ? 0 : -1;
-        }
-        case OLD: {
-            while (mq_timedsend(h->mqd, msg, size, 0, &(struct timespec){0,0}) != 0) {
-                if (errno != ETIMEDOUT && errno != EAGAIN) return -1;
-                char dummy[td->payload_size];
-                if (mq_receive(h->mqd, dummy, td->payload_size, NULL) < 0) return -1;
-            }
-            return 0;
-        }
-        case NEVER: {
-            struct timespec ts;
-            clock_gettime(CLOCK_REALTIME, &ts);
-            ts.tv_sec += 5;
-            return mq_timedsend(h->mqd, msg, size, 0, &ts) == 0 ? 0 : -1;
-        }
+int mq_push(MqHandle* h, const TopicDescriptor* td, const void* msg, size_t size) {
+    /* Latest-wins: if the queue is full, drop the oldest message(s) to make
+     * room for the new one, then enqueue it at the tail. Never blocks. */
+    while (mq_timedsend(h->mqd, msg, size, 0, &(struct timespec){0,0}) != 0) {
+        if (errno != ETIMEDOUT && errno != EAGAIN) return -1;
+        char dummy[td->payload_size];
+        if (mq_receive(h->mqd, dummy, td->payload_size, NULL) < 0) return -1;
     }
-    return -1;
+    return 0;
 }
 
-int mq_transport_recv(MqHandle* h, void* buf, size_t size, int timeout_ms) {
+int mq_pull(MqHandle* h, void* buf, size_t size, int timeout_ms) {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_sec  += timeout_ms / 1000;
@@ -84,14 +79,14 @@ int mq_transport_recv(MqHandle* h, void* buf, size_t size, int timeout_ms) {
     return (errno == ETIMEDOUT || errno == EAGAIN) ? 1 : -1;
 }
 
-void mq_transport_close(MqHandle* h) {
+void mq_disconnect(MqHandle* h) {
     if (h->mqd != (mqd_t)-1) {
         mq_close(h->mqd);
         h->mqd = (mqd_t)-1;
     }
 }
 
-void mq_transport_unlink(TopicId id) {
+void mq_remove(TopicId id) {
     const TopicDescriptor* td = topic_get(id);
     if (td) mq_unlink(td->name);
 }

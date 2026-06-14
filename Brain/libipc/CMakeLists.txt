@@ -1,6 +1,6 @@
 set(LIBIPC_SRC
     src/topic.c
-    src/mq_transport.c
+    src/mq.c
     src/shm.c
     src/bus.c
 )
