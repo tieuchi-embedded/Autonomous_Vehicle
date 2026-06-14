@@ -26,7 +26,7 @@ void PWM_Init(void)
 
     // Timer config
     TIM2->CR1 = 0;              // reset trước
-    TIM2->PSC = 16 - 1;
+    TIM2->PSC = SYSCLK_MHZ - 1;
     TIM2->ARR = 20000 - 1;
 
     // CCMR: clear hẳn rồi mới set

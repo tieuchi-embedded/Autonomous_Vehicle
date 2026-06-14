@@ -10,7 +10,7 @@
 void Timer2_Init()
 {
     RCC->APBENR1 |= RCC_APBENR1_TIM2EN;
-    TIM2->PSC = 16;
+    TIM2->PSC = SYSCLK_MHZ;
     TIM2->ARR = 1;
     TIM2->CR1 |= TIM_CR1_CEN;
 }
@@ -19,7 +19,7 @@ void Timer3_Init(void)
 {
     RCC->APBENR1 |= RCC_APBENR1_TIM3EN;
     TIM3->CR1 = 0;
-    TIM3->PSC = 16 - 1;     // 16MHz / 16 = 1 MHz
+    TIM3->PSC = SYSCLK_MHZ - 1;     // 16MHz / 16 = 1 MHz
     TIM3->ARR = 1000 - 1;   // 1 ms
     TIM3->EGR = 1;          // LOAD PSC, ARR
     TIM3->SR &= ~1;         // CLEAR UIF

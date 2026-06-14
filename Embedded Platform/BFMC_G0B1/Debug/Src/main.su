@@ -1,2 +1,2 @@
-../Src/main.c:25:6:Simulate_BNO055_Euler	40	static
-../Src/main.c:66:5:main	8	static
+../Src/main.c:21:6:I2C_Scanner	16	static
+../Src/main.c:69:5:main	40	static

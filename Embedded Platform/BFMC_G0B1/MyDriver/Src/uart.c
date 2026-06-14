@@ -32,9 +32,7 @@ void UART1_init(void)
     GPIOA->AFR[1] &= ~(0xF << ((10 - 8) * 4));
     GPIOA->AFR[1] |=  (0x1 << ((10 - 8) * 4));
 
-    /* Baudrate = 115200, fCLK = 16 MHz, OVER8=0
-       USARTDIV = 16MHz / 115200 = 138.9 -> 139 */
-    USART1->BRR = 139;
+    USART1->BRR = (int)(CPU_FREQ_HZ/115200);
 
     USART1->CR1 = 0;
     USART1->CR1 |=  (1 << 2);    // RE
@@ -54,7 +52,7 @@ void UART2_init(void)
     GPIOA->AFR[0] &= ~((0xF << (2*4)) | (0xF << (3*4)));
     GPIOA->AFR[0] |=  ((1 << (2*4)) | (1 << (3*4)));
 
-    USART2->BRR = 139;   // 115200 @ fCLK=16MHz, OVER8=0
+    USART2->BRR = (int)(CPU_FREQ_HZ/115200);
 
     USART2->CR1 = 0;
     USART2->CR1 |= (1 << 2);   // RE

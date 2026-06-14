@@ -44,7 +44,7 @@ void I2C1_Master_Init(void)
     GPIOB->AFR[1] |= (0x6<<(1*4));   // AF6 (I2C1_SDA on PB9)
 
     I2C1->CR1 &= ~I2C_CR1_PE;
-    I2C1->TIMINGR = 0x10805E89;   // 100kHz @ 16MHz I2CCLK (HSI16, no PLL)
+    I2C1->TIMINGR = 0x10B17DB5;   // 100kHz @ 16MHz I2CCLK (HSI16, no PLL)
     I2C1->CR1 |= I2C_CR1_PE;
 }
 
