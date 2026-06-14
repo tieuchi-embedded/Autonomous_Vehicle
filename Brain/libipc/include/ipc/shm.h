@@ -33,8 +33,8 @@
  * subscriber waits (without creating) until the publisher has created the
  * object and published its slot geometry, so the publisher MUST start first.
  *
- * This is an internal interface used by bus.c. Applications should use the
- * public API in ipc/bus.h and never call these functions directly.
+ * This is an internal interface used by ipc.c. Applications should use the
+ * public API in ipc/ipc.h and never call these functions directly.
  */
 #pragma once
 #include "ipc/topic.h"

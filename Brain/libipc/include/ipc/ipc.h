@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: MIT */
 /*
- * bus.h - Unified publish/subscribe API for libipc.
+ * ipc.h - Unified publish/subscribe API for libipc.
  *
  * This is the single public entry point applications use to exchange
  * messages between independent processes ("nodes"). Each logical data

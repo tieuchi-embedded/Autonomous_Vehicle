@@ -2,15 +2,15 @@ set(LIBIPC_SRC
     src/topic.c
     src/mq.c
     src/shm.c
-    src/bus.c
+    src/ipc.c
 )
 
 add_library(libipc STATIC ${LIBIPC_SRC})
 
 target_include_directories(libipc PUBLIC
     ${CMAKE_SOURCE_DIR}                # for "messages/foo.h"
-    include                            # for "ipc/topic.h", "ipc/bus.h"
-    bindings/cpp/include               # for "ipc/bus.hpp"
+    include                            # for "ipc/topic.h", "ipc/ipc.h"
+    bindings/cpp/include               # for "ipc/ipc.hpp"
 )
 
 target_link_libraries(libipc PUBLIC rt pthread)

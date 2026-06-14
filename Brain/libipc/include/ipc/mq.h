@@ -7,8 +7,8 @@
  * bounded depth; it is the right transport for commands and events that must
  * be delivered in order and not silently dropped.
  *
- * This is an internal interface used by bus.c. Applications should use the
- * public API in ipc/bus.h and never call these functions directly.
+ * This is an internal interface used by ipc.c. Applications should use the
+ * public API in ipc/ipc.h and never call these functions directly.
  *
  * The queue depth requested in the topic descriptor is clamped at open time
  * to the system limit in /proc/sys/fs/mqueue/msg_max.
