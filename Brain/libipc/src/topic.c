@@ -1,20 +1,19 @@
 #include "ipc/topic.h"
-#include "messages/serial_data.h"
 #include "messages/ego_state.h"
 #include "messages/lane_state.h"
 #include "messages/control_cmd.h"
-#include "messages/behavior_cmd.h"
-#include "messages/pose2d.h"
+#include "messages/object_state.h"
+#include "messages/behaviour_cmd.h"
+#include "messages/location.h"
 
 static const TopicDescriptor TOPICS[TOPIC_COUNT] = {
-    [CAMERA_FRAME] = { "/camera_frame", SHM, 0,                      3, NEW   },
-    [SERIAL]       = { "/serial",       MQ,  sizeof(SerialData),     16, OLD   },
-    [EGO_STATE]    = { "/ego_state",    MQ,  sizeof(EgoState),        8, OLD   },
-    [LANE_STATE]   = { "/lane_state",   MQ,  sizeof(LaneState),       1, NEW   },
-    [CONTROL_CMD]  = { "/control_cmd",  MQ,  sizeof(ControlCmd),      4, NEW   },
-    [DETECTIONS]   = { "/detections",   MQ,  0,                       1, NEW   },
-    [BEHAVIOR_CMD] = { "/behavior_cmd", MQ,  sizeof(BehaviorCmd),     4, NEVER },
-    [POSE2D]       = { "/pose2d",       MQ,  sizeof(Pose2D),          8, OLD   },
+    [CAMERA_FRAME]  = { "/camera_frame",  SHM, 0,                    3 },
+    [EGO_STATE]     = { "/ego_state",     SHM, sizeof(EgoState),     3 },
+    [LANE_STATE]    = { "/lane_state",    SHM, sizeof(LaneState),    3 },
+    [CONTROL_CMD]   = { "/control_cmd",   MQ,  sizeof(ControlCmd),   4 },
+    [OBJECT_STATE]  = { "/object_state",  MQ,  sizeof(ObjectState),  4 },
+    [BEHAVIOUR_CMD] = { "/behaviour_cmd", MQ,  sizeof(BehaviourCmd), 4 },
+    [LOCATION]      = { "/location",      MQ,  sizeof(Location),     8 },
 };
 
 const TopicDescriptor* topic_get(TopicId id) {

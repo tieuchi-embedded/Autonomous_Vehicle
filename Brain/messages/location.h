@@ -6,4 +6,4 @@ typedef struct {
     float x;        // meters
     float y;        // meters
     float heading;  // radians
-} Pose2D;
+} Location;

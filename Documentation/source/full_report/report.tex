@@ -254,14 +254,14 @@ Role           & Controls front wheel steering angle \\
 
 % --- IO group ---
 \node[node] (ctrl_cmd) at (0,   0.0) {Control Cmd};
-\node[node] (ypr)      at (3.0, 0.0) {Yaw Pitch Roll\\RPM};
-\node[node] (camera)   at (8.0, 0.0) {Camera};
+\node[node] (ypr)      at (4.5, 0.0) {Yaw Pitch Roll\\RPM};
+\node[node] (camera)   at (9.5, 0.0) {Camera};
 \node[group, fit=(ctrl_cmd)(ypr)(camera)] (io_box) {};
 \node[grplbl, above=5pt of io_box] {IO};
 
 % --- Topics ---
-\node[node, draw=green!60!black, dashed, text=green!60!black] (ego_state)    at (3.0, -2.0) {EGO\_STATE};
-\node[node, draw=green!60!black, dashed, text=green!60!black] (cam_frame)    at (8.0, -2.0) {CAMERA\_FRAME};
+\node[node, draw=green!60!black, dashed, text=green!60!black] (ego_state)    at (4.5, -2.0) {EGO\_STATE};
+\node[node, draw=green!60!black, dashed, text=green!60!black] (cam_frame)    at (9.5, -2.0) {CAMERA\_FRAME};
 
 % --- Arrows ---
 \draw[arr] (ctrl_cmd.north) -- ++(0, 0.8);
@@ -271,73 +271,76 @@ Role           & Controls front wheel steering angle \\
 \draw[arr] (camera.south) -- (cam_frame.north);
 
 % --- Camera branch ---
-\node[node] (cam_lane)   at (6.5, -4.8) {Camera Lane};
-\node[node] (lane_out)  at (6.5, -6.2) {Heading\_err\\Offset};
+\node[node] (cam_lane)   at (8.0, -4.8) {Camera Lane};
+\node[node] (lane_out)  at (8.0, -6.2) {Heading\_err\\Offset};
 \node[group, fit=(cam_lane)(lane_out)] (lane_det) {};
 \node[grplbl, above=5pt of lane_det] {Lane Detect};
 
-\node[node] (od_cam) at (11.5, -4.8) {Camera Frame};
-\node[node] (od_out) at (11.5, -6.2) {Object Class\\Distance};
+\node[node] (od_cam) at (13.0, -4.8) {Camera Frame};
+\node[node] (od_out) at (13.0, -6.2) {Object Class\\Distance};
 \node[group, fit=(od_cam)(od_out)] (obj_det) {};
 \node[grplbl, above=5pt of obj_det] {Object Detect};
 
-\draw[arr] ([xshift=-6pt]cam_frame.south) -- ++(0,-0.6) -- (6.3,-2.95) -- ([xshift=-5pt]cam_lane.north);
-\draw[arr] ([xshift= 6pt]cam_frame.south) -- ++(0,-0.6) -- (11.5,-2.95) -- (od_cam.north);
+\draw[arr] ([xshift=-6pt]cam_frame.south) -- ++(0,-0.6) -- (7.8,-2.95) -- ([xshift=-5pt]cam_lane.north);
+\draw[arr] ([xshift= 6pt]cam_frame.south) -- ++(0,-0.6) -- (13.0,-2.95) -- (od_cam.north);
 
 \draw[arr, cyan, dashed] (cam_lane.south) -- (lane_out.north);
 \draw[arr, cyan, dashed] (od_cam.south)   -- (od_out.north);
 
 % --- Topics ---
-\node[node, draw=green!60!black, dashed, text=green!60!black] (lane_state)   at (6.5,  -8.5) {LANE\_STATE};
-\node[node, draw=green!60!black, dashed, text=green!60!black] (object_state) at (11.5, -8.5) {OBJECT\_STATE};
+\node[node, draw=green!60!black, dashed, text=green!60!black] (lane_state)   at (8.0,  -8.5) {LANE\_STATE};
+\node[node, draw=green!60!black, dashed, text=green!60!black] (object_state) at (13.0, -8.5) {OBJECT\_STATE};
 
 \draw[arr] (lane_out.south)  -- (lane_state.north);
 \draw[arr] (od_out.south)   -- (object_state.north);
 
 % --- Localization node ---
-\node[node] (loc_lane) at (6.5, -11.0) {Lane State};
-\node[node] (loc_ego)  at (3.0, -11.0) {Ego State};
-\node[node] (loc_out)  at (4.5, -12.4) {Location};
+\node[node] (loc_lane) at (8.0, -11.0) {Lane State};
+\node[node] (loc_ego)  at (4.5, -11.0) {Ego State};
+\node[node] (loc_out)  at (6.0, -12.4) {Location};
 \node[group, fit=(loc_lane)(loc_ego)(loc_out)] (localization) {};
 \node[grplbl, above=5pt of localization] {Localization};
 
 \draw[arr] (lane_state.south)  -| (loc_lane.north);
 \draw[arr] (ego_state.south)   -- ++(0, -1.0) -| (loc_ego.north);
 
-\draw[arr, cyan, dashed] (loc_ego.south)  -- (3.0, -11.6) -- (4.2, -11.6) -- ([xshift=-8pt]loc_out.north);
-\draw[arr, cyan, dashed] (loc_lane.south) -- (6.5, -11.6) -- (4.8, -11.6) -- ([xshift= 8pt]loc_out.north);
+\draw[arr, cyan, dashed] (loc_ego.south)  -- (4.5, -11.6) -- (5.7, -11.6) -- ([xshift=-8pt]loc_out.north);
+\draw[arr, cyan, dashed] (loc_lane.south) -- (8.0, -11.6) -- (6.3, -11.6) -- ([xshift= 8pt]loc_out.north);
 
-\node[node, draw=green!60!black, dashed, text=green!60!black] (location) at (4.5, -14.2) {LOCATION};
+\node[node, draw=green!60!black, dashed, text=green!60!black] (location) at (6.0, -14.2) {LOCATION};
 \draw[arr] (loc_out.south) -- (location.north);
 
 % --- Planning node ---
-\node[node] (plan_loc)  at (4.5, -16.2) {Location};
-\node[node] (plan_lane) at (8.6, -16.2) {Lane State};
-\node[node] (plan_obj)  at (11.5, -16.2) {Object State};
-\node[node] (plan_out)  at (8.0, -18.2) {Target Heading\\Target Speed};
+\node[node] (plan_loc)  at (6.0, -16.2) {Location};
+\node[node] (plan_lane) at (10.0, -16.2) {Lane State};
+\node[node] (plan_obj)  at (13.0, -16.2) {Object State};
+\node[node] (plan_out)  at (9.5, -18.2) {Target Heading\\Target Speed};
 \node[group, fit=(plan_loc)(plan_lane)(plan_obj)(plan_out)] (plan_box) {};
 \node[grplbl, above=5pt of plan_box] {Planning};
 
 \draw[arr] (location.south) -- (plan_loc.north);
-\draw[arr] (lane_state.east) -- (8.6, -8.5) -- (plan_lane.north);
+\draw[arr] (lane_state.east) -- (10.0, -8.5) -- (plan_lane.north);
 \draw[arr] (object_state.south) -- (plan_obj.north);
 
-\draw[arr, cyan, dashed] (plan_loc.south)  -- (4.5, -17.2) -- (7.0, -17.2) -- ([xshift=-28pt]plan_out.north);
-\draw[arr, cyan, dashed] ([xshift=-13pt]plan_lane.south) -- ([xshift=4pt]plan_out.north);
-\draw[arr, cyan, dashed] (plan_obj.south)  -- (11.5,-17.2) -- (9.0, -17.2) -- ([xshift= 30pt]plan_out.north);
+\draw[arr, cyan, dashed] (plan_loc.south)  -- (6.0, -17.2) -- (8.5, -17.2) -- ([xshift=-28pt]plan_out.north);
+\draw[arr, cyan, dashed] ([xshift=-13pt]plan_lane.south) -- ([xshift=1pt]plan_out.north);
+\draw[arr, cyan, dashed] (plan_obj.south)  -- (13.0,-17.2) -- (10.55, -17.2) -- ([xshift= 30pt]plan_out.north);
 
 \node[node, draw=green!60!black, dashed, text=green!60!black] (control_cmd_t) at (0.0, -8.5) {CONTROL};
-\node[node, draw=green!60!black, dashed, text=green!60!black] (behaviour_cmd) at (8.0, -20.0) {BEHAVIOUR\_CMD};
+\node[node, draw=green!60!black, dashed, text=green!60!black] (behaviour_cmd) at (9.5, -21.5) {BEHAVIOUR\_CMD};
 \draw[arr] (plan_out.south) -- (behaviour_cmd.north);
 
 % --- Control node ---
-\node[node] (ctrl_bcmd) at (0.0, -20.0) {Behaviour Cmd};
+\node[node] (ctrl_ego)  at (0.0, -20.0) {Ego State};
+\node[node] (ctrl_bcmd) at (0.0, -21.5) {Behaviour Cmd};
 \node[node] (ctrl_ccmd) at (0.0, -18.5) {Control Cmd};
-\node[group, fit=(ctrl_bcmd)(ctrl_ccmd)] (ctrl_box) {};
+\node[group, fit=(ctrl_ego)(ctrl_bcmd)(ctrl_ccmd)] (ctrl_box) {};
 \node[grplbl, above=5pt of ctrl_box] {Control};
 
 \draw[arr] (behaviour_cmd.west) -- (ctrl_bcmd.east);
-\draw[arr, cyan, dashed] (ctrl_bcmd.north) -- (ctrl_ccmd.south);
+\draw[arr] (ego_state.west) -- ++(-0.9,0) |- (ctrl_ego.east);
+\draw[arr, cyan, dashed] (ctrl_bcmd.west) -- ++(-0.2,0) |-(ctrl_ccmd.west);
+\draw[arr, cyan, dashed] (ctrl_ego.north) -- (ctrl_ccmd.south);
 \draw[arr] (ctrl_ccmd.north) -- (control_cmd_t.south);
 \draw[arr] (control_cmd_t.north) -- (ctrl_cmd.south);
 
@@ -1131,7 +1134,7 @@ who is listening, and a subscriber does not know the publisher's identity.
   \item \textbf{Node} --- an independent OS process that owns one or more publishers or subscribers.
         Each node links against \texttt{liblibipc} and calls the C API directly.
   \item \textbf{Topic} --- a named channel identified by a \texttt{TopicId} enum value (e.g.\
-        \texttt{CAMERA\_FRAME=1}, \texttt{SERIAL=2}, \texttt{EGO\_STATE=3}, \texttt{LANE\_STATE=4}, \texttt{CONTROL\_CMD=5}).
+        \texttt{CAMERA\_FRAME=1}, \texttt{EGO\_STATE=2}, \texttt{LANE\_STATE=3}, \texttt{CONTROL\_CMD=4}).
         Each topic has a fixed payload type, transport kind (MQ or SHM), and drop policy, declared in \texttt{topic.c}.
   \item \textbf{Publish} --- a node calls \texttt{ipc\_publish()} with a topic ID and a pointer to a POD struct.
         The bus layer routes the write to the correct transport. The publisher must start before any subscriber.
@@ -1158,40 +1161,78 @@ who is listening, and a subscriber does not know the publisher's identity.
 \caption{Pub/Sub model: publisher writes to the bus; multiple subscribers receive independently}
 \end{figure}
 
-\paragraph{Drop Policy}
+\paragraph{Latest-wins delivery}
 
-Drop policy defines what happens when a new message arrives and the buffer is full, or when a subscriber
-reads slower than the publisher writes.
+Both transports follow a single \emph{latest-wins} rule, chosen for a real-time
+control loop where the freshest value matters and a producer must never block:
 
-\begin{table}[H]
-\centering
-\begin{tabular}{lp{5cm}l}
-\hline
-\textbf{Policy} & \textbf{Behavior} & \textbf{Transport} \\
-\hline
-\texttt{NEW}   & Drop the \emph{incoming} message if buffer full; keep existing messages & MQ \\
-\texttt{OLD}   & Drop the \emph{oldest} message in buffer to make room for the new one  & MQ \\
-\texttt{NEVER} & Latest write always overwrites the single slot; subscriber always gets newest value & SHM \\
-\hline
-\end{tabular}
-\caption{Drop policies in \texttt{libipc}}
-\end{table}
+\begin{itemize}
+  \item \textbf{SHM} --- the publisher overwrites the slot; a subscriber always
+        reads the most recent value and may skip intermediate samples.
+  \item \textbf{MQ} --- if the queue is full on send, the oldest message is
+        dropped to make room and the new one is enqueued at the tail. The send
+        never blocks.
+\end{itemize}
 
-In this project all SHM topics use \texttt{NEVER} (latest-wins); MQ topics use \texttt{NEW} (block new if full).
+There is no configurable drop policy: every topic behaves the same way, so a
+slow consumer loses old data rather than stalling the producer.
 
 \paragraph{C API / C++ Binding}
 
-The C API (\texttt{libipc/include/ipc/bus.h}) exposes four functions:
-\begin{itemize}
-  \item \texttt{ipc\_publish\_open(TopicId)} --- allocate publisher handle, create SHM/MQ object.
-  \item \texttt{ipc\_publish(handle, const void *data)} --- write one message.
-  \item \texttt{ipc\_publish\_close(handle)} --- release handle, unlink SHM/MQ.
-  \item \texttt{ipc\_subscribe\_open(TopicId)} / \texttt{ipc\_recv(handle, void *out, int timeout\_ms)} / \texttt{ipc\_subscribe\_close}.
-\end{itemize}
+The public C API (\texttt{libipc/include/ipc/bus.h}) exposes six functions, split
+into a publisher side and a subscriber side. All names follow a common
+\texttt{publish/subscribe/push/pull} convention shared by the two transport
+layers underneath.
 
-The C++ binding (\texttt{libipc/bindings/cpp/include/ipc/bus.hpp}) wraps these into RAII templates:
-\texttt{ipc::Publisher<T>} and \texttt{ipc::Subscriber<T>}, where \texttt{T} is the message struct type.
-Constructors call \texttt{open}; destructors call \texttt{close} automatically.
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Role} & \textbf{Function} & \textbf{Description} \\
+\hline
+\multirow{3}{*}{Publisher}
+  & \texttt{ipc\_publish(id, size)}        & Create the SHM/MQ object, return a handle \\
+  & \texttt{ipc\_push(pub, msg, size)}     & Send one message \\
+  & \texttt{ipc\_unpublish(pub)}           & Detach and unlink the object, free handle \\
+\hline
+\multirow{3}{*}{Subscriber}
+  & \texttt{ipc\_subscribe(id)}            & Attach to the existing object, return a handle \\
+  & \texttt{ipc\_pull(sub, buf, size, ms)} & Receive next message (0=ok, 1=timeout, -1=err) \\
+  & \texttt{ipc\_unsubscribe(sub)}         & Detach and free handle \\
+\hline
+\end{tabular}
+\caption{libipc public C API (\texttt{ipc/bus.h})}
+\end{table}
+
+Internally the API dispatches to one of two transport modules, which share the
+same naming scheme. The descriptor table (\texttt{topic.c}) decides which one a
+topic uses.
+
+Both modules expose the same set of operations; the table lists the MQ names
+(the SHM module mirrors them with an \texttt{shm\_} prefix).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{MQ (\texttt{mq.c})} & \textbf{SHM (\texttt{shm.c})} & \textbf{Role} \\
+\hline
+\texttt{mq\_publish}    & \texttt{shm\_publish}    & create + open object (publisher) \\
+\texttt{mq\_subscribe}  & \texttt{shm\_subscribe}  & attach to object (subscriber) \\
+\texttt{mq\_push}       & \texttt{shm\_push}       & send one message \\
+\texttt{mq\_pull}       & \texttt{shm\_pull}       & receive one message \\
+\texttt{mq\_disconnect} & \texttt{shm\_disconnect} & close handle \\
+\texttt{mq\_remove}     & \texttt{shm\_remove}     & unlink object (publisher) \\
+\hline
+\end{tabular}
+\caption{Transport-layer modules (\texttt{ipc/mq.h}, \texttt{ipc/shm.h})}
+\end{table}
+
+The C++ binding (\texttt{libipc/bindings/cpp/include/ipc/bus.hpp}) wraps the C API
+into RAII templates: \texttt{ipc::Publisher<T>} and \texttt{ipc::Subscriber<T>},
+where \texttt{T} is the message struct type. The constructor opens the endpoint
+and the destructor closes it automatically; \texttt{send()} maps to
+\texttt{ipc\_push} and \texttt{poll()} to \texttt{ipc\_pull}.
 
 \paragraph{Python Binding}
 
@@ -1201,9 +1242,10 @@ The Python binding (\texttt{libipc/bindings/python/ipc.py}) uses \texttt{ctypes}
 Usage pattern:
 \begin{enumerate}
   \item \texttt{import ipc, ipc\_schema} (after inserting the bindings path into \texttt{sys.path}).
-  \item \texttt{pub = ipc.Publisher(ipc\_schema.TopicId.LANE\_STATE)} --- open publisher.
+  \item \texttt{pub = ipc.Publisher(ipc\_schema.TopicId.LANE\_STATE, size)} --- open publisher.
   \item Fill a \texttt{ipc\_schema.LaneState()} struct and call \texttt{pub.publish(msg)}.
-  \item \texttt{sub = ipc.Subscriber(ipc\_schema.TopicId.EGO\_STATE)}; \texttt{msg = sub.recv(timeout\_ms=100)}.
+  \item \texttt{sub = ipc.Subscriber(ipc\_schema.TopicId.EGO\_STATE, ipc\_schema.EgoState)};
+        \texttt{msg = sub.poll(timeout\_ms=100)}.
 \end{enumerate}
 
 \paragraph{Node/Topic}~
@@ -1213,48 +1255,44 @@ Usage pattern:
 \hline
 \textbf{Publisher node} & \textbf{Topic} & \textbf{Subscriber node} \\
 \hline
-serial            & \texttt{SERIAL}         & state \\
+serial            & \texttt{EGO\_STATE}     & localization, control \\
 camera            & \texttt{CAMERA\_FRAME}  & lane, object\_detection \\
-state             & \texttt{EGO\_STATE}     & localization \\
 lane              & \texttt{LANE\_STATE}    & localization, planning \\
 object\_detection & \texttt{OBJECT\_STATE}  & planning \\
 localization      & \texttt{LOCATION}       & planning \\
 planning          & \texttt{BEHAVIOUR\_CMD} & control \\
-control           & \texttt{CONTROL\_CMD}   & serial(IO out) \\
+control           & \texttt{CONTROL\_CMD}   & serial (IO out) \\
 \hline
 \end{tabular}
 \end{center}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{llllp{5cm}}
+\begin{tabular}{lllp{5cm}}
 \hline
-\textbf{Topic} & \textbf{Message} & \textbf{Transport} & \textbf{Drop Policy} & \textbf{Fields} \\
+\textbf{Topic} & \textbf{Message} & \textbf{Transport} & \textbf{Fields} \\
 \hline
-\texttt{SERIAL}
-  & \texttt{SerialData}  & MQ  & OLD
-  & \texttt{yaw, pitch, roll,} \newline \texttt{wx, wy, wz,} \newline \texttt{ax, ay, az, rpm} \\
 \texttt{CAMERA\_FRAME}
-  & \texttt{CameraFrame} & SHM & NEW
+  & \texttt{CameraFrame} & SHM
   & \texttt{width, height,} \newline \texttt{stride, fmt, data\_size} \\
 \texttt{EGO\_STATE}
-  & \texttt{EgoState}    & MQ  & OLD
-  & \texttt{time\_ms, angle, speed} \\
+  & \texttt{EgoState}    & SHM
+  & \texttt{yaw, pitch, roll, rpm} \\
 \texttt{LANE\_STATE}
-  & \texttt{LaneState}   & SHM & NEW
-  & \texttt{heading\_err\_rad,} \newline \texttt{lateral\_offset\_m} \\
-\texttt{OBJECT\_STATE}
-  & \texttt{Detections}  & MQ  & NEW
-  & \ldots \\
-\texttt{LOCATION}
-  & \texttt{Pose2D}      & MQ  & OLD
-  & \texttt{x, y, heading} \\
-\texttt{BEHAVIOUR\_CMD}
-  & \texttt{BehaviorCmd} & MQ  & NEVER
-  & \texttt{target\_speed,} \newline \texttt{target\_heading, mode} \\
+  & \texttt{LaneState}   & SHM
+  & \texttt{heading\_err\_rad,} \newline \texttt{offset\_cm} \\
 \texttt{CONTROL\_CMD}
-  & \texttt{ControlCmd}  & MQ  & NEW
+  & \texttt{ControlCmd}  & MQ
   & \texttt{rpm, steer\_deg} \\
+\texttt{OBJECT\_STATE}
+  & \texttt{ObjectState} & MQ
+  & \texttt{cls, distance,} \newline \texttt{confidence} \\
+\texttt{BEHAVIOUR\_CMD}
+  & \texttt{BehaviourCmd} & MQ
+  & \texttt{target\_speed,} \newline \texttt{target\_heading, mode} \\
+\texttt{LOCATION}
+  & \texttt{Location}    & MQ
+  & \texttt{x, y, heading} \\
 \hline
 \end{tabular}
 \caption{Topic descriptors}
@@ -1414,7 +1452,7 @@ IPM source (bottom) & \texttt{BL\_X}, \texttt{BR\_X}, \texttt{BOT\_Y} & $0.00$, 
 Binary mask         & \texttt{L\_MIN}, \texttt{L\_MAX} (HLS L)       & $200$, $255$ \\
 Sliding window      & \texttt{N\_WINDOWS}, \texttt{MARGIN}, \texttt{MIN\_PIX} & $9$, $40$\,px, $30$ \\
 Smoothing           & \texttt{ALPHA} (EMA)                           & $0.7$ \\
-Scale               & \texttt{PIXEL\_TO\_M} (uncalibrated)           & $0.005$ \\
+Scale               & \texttt{PIXEL\_TO\_CM} (uncalibrated)          & $0.5$ \\
 \hline
 \end{tabular}
 \caption{Lane detection parameters}
@@ -1423,11 +1461,11 @@ Scale               & \texttt{PIXEL\_TO\_M} (uncalibrated)           & $0.005$ \
 After fitting the lane line $x = b\,y + c$, the heading error is the angle of
 the line with respect to the vertical axis, and the lateral offset is the
 horizontal distance between the lane reference and the image center (the
-vehicle body), scaled to meters:
+vehicle body), scaled to centimeters:
 \[
   \text{heading\_err} = \arctan(b),
   \qquad
-  \text{lateral\_offset} = \bigl(x_{\text{lane}}\big|_{y=h-1} - \tfrac{w}{2}\bigr)\cdot \texttt{PIXEL\_TO\_M}.
+  \text{offset\_cm} = \bigl(x_{\text{lane}}\big|_{y=h-1} - \tfrac{w}{2}\bigr)\cdot \texttt{PIXEL\_TO\_CM}.
 \]
 The right lane is preferred; when both lanes are detected the reference $x$ is
 the midpoint of the two fitted lines, otherwise the node falls back to the left
@@ -1459,15 +1497,18 @@ failure the previous smoothed value is held.
 \paragraph{Object Detection}
 
 \textit{Planned:} run a YOLOv8n model (ONNX) on \texttt{CAMERA\_FRAME} and publish
-detected object class and distance to the \texttt{DETECTIONS} topic.
+detected object class, distance and confidence to the \texttt{OBJECT\_STATE} topic.
 Not yet implemented.
 
 % ================================================================
-\paragraph{State}
+\paragraph{Ego State}
 
-The state module fuses the raw serial telemetry from the STM32 into a compact
-ego-vehicle state. It converts the IMU yaw angle and the motor RPM into the
-vehicle's heading and linear speed, which localization and control consume.
+The ego-state module is the bridge between the STM32 and the perception layer.
+The serial node reads the UART telemetry frames (\texttt{@IMU} and \texttt{@RPM}),
+parses them, and publishes the raw values directly on \texttt{EGO\_STATE}. The
+message carries the IMU Euler angles and the motor RPM as received; consumers
+(localization, control) derive heading and speed from these raw values
+themselves, so no separate processing node is needed.
 
 \begin{table}[H]
 \centering
@@ -1475,44 +1516,32 @@ vehicle's heading and linear speed, which localization and control consume.
 \hline
 \textbf{Node} & \textbf{Subscribe} & \textbf{Publish} \\
 \hline
-\texttt{state} & \texttt{SERIAL} (MQ) & \texttt{EGO\_STATE} (MQ) \\
+\texttt{serial} & --- (reads UART) & \texttt{EGO\_STATE} (SHM) \\
 \hline
 \end{tabular}
-\caption{State node communication}
+\caption{Serial / ego-state node communication}
 \end{table}
 
 \textit{Algorithm theory.}
 Linear speed is derived from the motor angular velocity through the drivetrain:
 dividing motor RPM by the gear ratio yields wheel RPM, and multiplying by the
-wheel circumference converts to linear velocity. The heading angle is taken
-directly from the on-chip fused yaw of the IMU.
+wheel circumference converts to linear velocity. The heading is taken directly
+from the on-chip fused yaw of the IMU. These conversions are performed by the
+consumer, not by the serial node.
 
 \textit{Application in project.}
-With a gear ratio of $7{:}1$ and wheel radius $6.5$\,cm, the node computes:
+With a gear ratio of $7{:}1$ and wheel radius $6.5$\,cm, a consumer recovers:
 \[
-  \text{angle} = \text{yaw}, \qquad
+  \text{heading} = \text{yaw}, \qquad
   \text{speed} = \frac{\text{rpm}}{7} \cdot 2\pi \cdot \frac{6.5}{60}\;\,[\text{cm/s}].
 \]
-The published \texttt{EgoState} also carries \texttt{time\_ms}, the milliseconds
-elapsed since the node started.
-
-\begin{table}[H]
-\centering
-\begin{tabular}{ll}
-\hline
-\textbf{Function} & \textbf{Description} \\
-\hline
-\texttt{StateEstimator::update(s)}  & Update angle/speed from a \texttt{SerialData} sample \\
-\texttt{StateEstimator::snapshot()} & Return the current \texttt{EgoState} (with \texttt{time\_ms}) \\
-\hline
-\end{tabular}
-\caption{State node functions}
-\end{table}
+\texttt{EgoState} carries \texttt{yaw}, \texttt{pitch}, \texttt{roll} (degrees)
+and \texttt{rpm} (motor RPM) as published by the serial node.
 
 \subsubsection{Localization}
 
 \textit{Planned:} dead reckoning from \texttt{EGO\_STATE} (integrating speed and
-heading over time) to produce a 2D pose published on the \texttt{POSE2D} topic.
+heading over time) to produce a 2D pose published on the \texttt{LOCATION} topic.
 Not yet implemented.
 
 \subsubsection{Planning}

@@ -1,6 +1,7 @@
+#define _POSIX_C_SOURCE 200809L
 #include "ipc/bus.h"
-#include "mq_transport.h"
-#include "shm.h"
+#include "ipc/mq.h"
+#include "ipc/shm.h"
 #include <stdlib.h>
 #include <time.h>
 
@@ -23,7 +24,7 @@ struct ipc_subscriber {
     };
 };
 
-ipc_publisher_t* ipc_publish_open(TopicId id, size_t payload_size) {
+ipc_publisher_t* ipc_publish(TopicId id, size_t payload_size) {
     const TopicDescriptor* td = topic_get(id);
     if (!td) return NULL;
 
@@ -34,34 +35,34 @@ ipc_publisher_t* ipc_publish_open(TopicId id, size_t payload_size) {
 
     int r;
     if (td->transport == SHM)
-        r = shm_open_pub(id, payload_size, &pub->shm);
+        r = shm_publish(id, payload_size, &pub->shm);
     else
-        r = mq_transport_open_pub(id, &pub->mq);
+        r = mq_publish(id, &pub->mq);
 
     if (r != 0) { free(pub); return NULL; }
     return pub;
 }
 
-int ipc_publish(ipc_publisher_t* pub, const void* msg, size_t size) {
+int ipc_push(ipc_publisher_t* pub, const void* msg, size_t size) {
     if (pub->transport == SHM)
-        return shm_write(&pub->shm, msg, size);
+        return shm_push(&pub->shm, msg, size);
     const TopicDescriptor* td = topic_get(pub->id);
-    return mq_transport_send(&pub->mq, td, msg, size);
+    return mq_push(&pub->mq, td, msg, size);
 }
 
-void ipc_publish_close(ipc_publisher_t* pub) {
+void ipc_unpublish(ipc_publisher_t* pub) {
     if (!pub) return;
     if (pub->transport == SHM) {
-        shm_close(&pub->shm);
-        shm_unlink_topic(pub->id);
+        shm_disconnect(&pub->shm);
+        shm_remove(pub->id);
     } else {
-        mq_transport_close(&pub->mq);
-        mq_transport_unlink(pub->id);
+        mq_disconnect(&pub->mq);
+        mq_remove(pub->id);
     }
     free(pub);
 }
 
-ipc_subscriber_t* ipc_subscribe_open(TopicId id) {
+ipc_subscriber_t* ipc_subscribe(TopicId id) {
     const TopicDescriptor* td = topic_get(id);
     if (!td) return NULL;
 
@@ -73,17 +74,17 @@ ipc_subscriber_t* ipc_subscribe_open(TopicId id) {
 
     int r;
     if (td->transport == SHM)
-        r = shm_open_sub(id, &sub->shm);
+        r = shm_subscribe(id, &sub->shm);
     else
-        r = mq_transport_open_sub(id, &sub->mq);
+        r = mq_subscribe(id, &sub->mq);
 
     if (r != 0) { free(sub); return NULL; }
     return sub;
 }
 
-int ipc_poll(ipc_subscriber_t* sub, void* buf, size_t size, int timeout_ms) {
+int ipc_pull(ipc_subscriber_t* sub, void* buf, size_t size, int timeout_ms) {
     if (sub->transport == MQ)
-        return mq_transport_recv(&sub->mq, buf, size, timeout_ms);
+        return mq_pull(&sub->mq, buf, size, timeout_ms);
 
     // SHM: spin-poll with 1ms sleep until timeout
     struct timespec deadline;
@@ -96,7 +97,7 @@ int ipc_poll(ipc_subscriber_t* sub, void* buf, size_t size, int timeout_ms) {
     }
 
     while (1) {
-        if (shm_read(&sub->shm, buf, size, &sub->last_seq)) return 0;
+        if (shm_pull(&sub->shm, buf, size, &sub->last_seq)) return 0;
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
         if (now.tv_sec > deadline.tv_sec ||
@@ -107,9 +108,9 @@ int ipc_poll(ipc_subscriber_t* sub, void* buf, size_t size, int timeout_ms) {
     }
 }
 
-void ipc_subscribe_close(ipc_subscriber_t* sub) {
+void ipc_unsubscribe(ipc_subscriber_t* sub) {
     if (!sub) return;
-    if (sub->transport == SHM) shm_close(&sub->shm);
-    else mq_transport_close(&sub->mq);
+    if (sub->transport == SHM) shm_disconnect(&sub->shm);
+    else mq_disconnect(&sub->mq);
     free(sub);
 }

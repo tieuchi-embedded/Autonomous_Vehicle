@@ -39,23 +39,23 @@ _lib = _load_lib()
 _publisher_p  = ct.c_void_p
 _subscriber_p = ct.c_void_p
 
-_lib.ipc_publish_open.argtypes = [ct.c_int, ct.c_size_t]
-_lib.ipc_publish_open.restype  = _publisher_p
+_lib.ipc_publish.argtypes = [ct.c_int, ct.c_size_t]
+_lib.ipc_publish.restype  = _publisher_p
 
-_lib.ipc_publish.argtypes = [_publisher_p, ct.c_void_p, ct.c_size_t]
-_lib.ipc_publish.restype  = ct.c_int
+_lib.ipc_push.argtypes = [_publisher_p, ct.c_void_p, ct.c_size_t]
+_lib.ipc_push.restype  = ct.c_int
 
-_lib.ipc_publish_close.argtypes = [_publisher_p]
-_lib.ipc_publish_close.restype  = None
+_lib.ipc_unpublish.argtypes = [_publisher_p]
+_lib.ipc_unpublish.restype  = None
 
-_lib.ipc_subscribe_open.argtypes = [ct.c_int]
-_lib.ipc_subscribe_open.restype  = _subscriber_p
+_lib.ipc_subscribe.argtypes = [ct.c_int]
+_lib.ipc_subscribe.restype  = _subscriber_p
 
-_lib.ipc_poll.argtypes = [_subscriber_p, ct.c_void_p, ct.c_size_t, ct.c_int]
-_lib.ipc_poll.restype  = ct.c_int
+_lib.ipc_pull.argtypes = [_subscriber_p, ct.c_void_p, ct.c_size_t, ct.c_int]
+_lib.ipc_pull.restype  = ct.c_int
 
-_lib.ipc_subscribe_close.argtypes = [_subscriber_p]
-_lib.ipc_subscribe_close.restype  = None
+_lib.ipc_unsubscribe.argtypes = [_subscriber_p]
+_lib.ipc_unsubscribe.restype  = None
 
 
 def _now_ns() -> int:
@@ -71,21 +71,21 @@ class Publisher:
         self._topic = topic_id
         self._size  = payload_size
         self._seq   = 0
-        self._h = _lib.ipc_publish_open(topic_id, payload_size)
+        self._h = _lib.ipc_publish(topic_id, payload_size)
         if not self._h:
-            raise RuntimeError(f"ipc_publish_open failed (topic={topic_id})")
+            raise RuntimeError(f"ipc_publish failed (topic={topic_id})")
 
     def publish(self, msg: ct.Structure) -> int:
         msg.h.topic = self._topic
         msg.h.seq   = self._seq
         msg.h.ts_ns = _now_ns()
         self._seq += 1
-        rc = _lib.ipc_publish(self._h, ct.byref(msg), ct.sizeof(msg))
+        rc = _lib.ipc_push(self._h, ct.byref(msg), ct.sizeof(msg))
         return rc
 
     def close(self) -> None:
         if self._h:
-            _lib.ipc_publish_close(self._h)
+            _lib.ipc_unpublish(self._h)
             self._h = None
 
     def __enter__(self):
@@ -107,22 +107,22 @@ class Subscriber:
     """
     def __init__(self, topic_id: int, struct_cls: Type[ct.Structure]):
         self._cls = struct_cls
-        self._h = _lib.ipc_subscribe_open(topic_id)
+        self._h = _lib.ipc_subscribe(topic_id)
         if not self._h:
-            raise RuntimeError(f"ipc_subscribe_open failed (topic={topic_id})")
+            raise RuntimeError(f"ipc_subscribe failed (topic={topic_id})")
 
     def poll(self, timeout_ms: int = 0) -> Optional[ct.Structure]:
         buf = self._cls()
-        rc = _lib.ipc_poll(self._h, ct.byref(buf), ct.sizeof(buf), timeout_ms)
+        rc = _lib.ipc_pull(self._h, ct.byref(buf), ct.sizeof(buf), timeout_ms)
         if rc == 0:
             return buf
         if rc == 1:
             return None
-        raise RuntimeError(f"ipc_poll failed rc={rc}")
+        raise RuntimeError(f"ipc_pull failed rc={rc}")
 
     def close(self) -> None:
         if self._h:
-            _lib.ipc_subscribe_close(self._h)
+            _lib.ipc_unsubscribe(self._h)
             self._h = None
 
     def __enter__(self):
