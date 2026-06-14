@@ -3,7 +3,7 @@
 //
 // Usage: camera_sim_node <video_path> [fps_override]
 
-#include "ipc/bus.h"
+#include "ipc/ipc.h"
 #include "messages/camera_frame.h"
 
 #include <opencv2/opencv.hpp>
@@ -47,9 +47,9 @@ int main(int argc, char* argv[]) {
     const size_t pixel_bytes = (size_t)OUT_W * OUT_H * CHANNELS;
     const size_t payload     = sizeof(CameraFrame) + pixel_bytes;
 
-    ipc_publisher_t* pub = ipc_publish_open(CAMERA_FRAME, payload);
+    ipc_publisher_t* pub = ipc_publish(CAMERA_FRAME, payload);
     if (!pub) {
-        std::fprintf(stderr, "camera_sim_node: ipc_publish_open failed\n");
+        std::fprintf(stderr, "camera_sim_node: ipc_publish failed\n");
         return 1;
     }
 
@@ -84,14 +84,14 @@ int main(int argc, char* argv[]) {
         hdr->data_size = (uint32_t)pixel_bytes;
         std::memcpy(px, resized.data, pixel_bytes);
 
-        ipc_publish(pub, buf.data(), payload);
+        ipc_push(pub, buf.data(), payload);
         seq++;
 
         next_tick += period;
         std::this_thread::sleep_until(next_tick);
     }
 
-    ipc_publish_close(pub);
+    ipc_unpublish(pub);
     std::printf("camera_sim_node: shutting down (seq=%u)\n", seq);
     return 0;
 }
