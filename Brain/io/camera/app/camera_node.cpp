@@ -1,19 +1,18 @@
-// camera_sim_node — reads MP4, resizes to 320x240 BGR, publishes CAMERA_FRAME (SHM).
-// Loops video on EOF. Sleeps to match source FPS.
+// camera_node — captures from a USB camera (V4L2), resizes to 320x180 BGR,
+// publishes CAMERA_FRAME (SHM). The camera stream sets the frame rate.
 //
-// Usage: camera_sim_node <video_path> [fps_override]
+// Usage: camera_node [device_index | /dev/videoN]   (default 0)
 
-#include "ipc/bus.h"
+#include "ipc/ipc.h"
 #include "messages/camera_frame.h"
 
 #include <opencv2/opencv.hpp>
 
 #include <atomic>
-#include <chrono>
 #include <csignal>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
-#include <thread>
 #include <vector>
 
 static constexpr int OUT_W = 320;
@@ -27,34 +26,33 @@ int main(int argc, char* argv[]) {
     std::signal(SIGINT,  on_signal);
     std::signal(SIGTERM, on_signal);
 
-    if (argc < 2) {
-        std::fprintf(stderr, "usage: %s <video_path> [fps_override]\n", argv[0]);
-        return 1;
-    }
-    const char* video_path = argv[1];
+    // Open camera: integer index ("0") or device path ("/dev/video0").
+    const char* dev = (argc > 1) ? argv[1] : "0";
+    cv::VideoCapture cap;
+    char* end = nullptr;
+    long idx = std::strtol(dev, &end, 10);
+    if (*end == '\0') cap.open((int)idx, cv::CAP_V4L2);
+    else              cap.open(dev, cv::CAP_V4L2);
 
-    cv::VideoCapture cap(video_path);
     if (!cap.isOpened()) {
-        std::fprintf(stderr, "camera_sim_node: cannot open %s\n", video_path);
+        std::fprintf(stderr, "camera_node: cannot open camera %s\n", dev);
         return 1;
     }
 
-    double src_fps = cap.get(cv::CAP_PROP_FPS);
-    if (src_fps <= 0.0) src_fps = 30.0;
-    double fps = (argc >= 3) ? std::atof(argv[2]) : src_fps;
-    auto period = std::chrono::microseconds(static_cast<long>(1.0e6 / fps));
+    // Request capture geometry; resize anyway to guarantee the output size.
+    cap.set(cv::CAP_PROP_FRAME_WIDTH,  OUT_W);
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, OUT_H);
 
     const size_t pixel_bytes = (size_t)OUT_W * OUT_H * CHANNELS;
     const size_t payload     = sizeof(CameraFrame) + pixel_bytes;
 
-    ipc_publisher_t* pub = ipc_publish_open(CAMERA_FRAME, payload);
+    ipc_publisher_t* pub = ipc_publish(CAMERA_FRAME, payload);
     if (!pub) {
-        std::fprintf(stderr, "camera_sim_node: ipc_publish_open failed\n");
+        std::fprintf(stderr, "camera_node: ipc_publish failed\n");
         return 1;
     }
 
-    std::printf("camera_sim_node: %s @ %.1f fps -> %dx%d BGR\n",
-                video_path, fps, OUT_W, OUT_H);
+    std::printf("camera_node: %s -> %dx%d BGR\n", dev, OUT_W, OUT_H);
 
     std::vector<uint8_t> buf(payload);
     CameraFrame* hdr = reinterpret_cast<CameraFrame*>(buf.data());
@@ -62,14 +60,9 @@ int main(int argc, char* argv[]) {
 
     cv::Mat frame, resized;
     uint32_t seq = 0;
-    auto next_tick = std::chrono::steady_clock::now();
 
     while (g_run.load()) {
-        if (!cap.read(frame) || frame.empty()) {
-            // loop video
-            cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-            continue;
-        }
+        if (!cap.read(frame) || frame.empty()) continue;  // dropped frame
 
         cv::resize(frame, resized, {OUT_W, OUT_H});
         if (!resized.isContinuous()) resized = resized.clone();
@@ -84,14 +77,11 @@ int main(int argc, char* argv[]) {
         hdr->data_size = (uint32_t)pixel_bytes;
         std::memcpy(px, resized.data, pixel_bytes);
 
-        ipc_publish(pub, buf.data(), payload);
+        ipc_push(pub, buf.data(), payload);
         seq++;
-
-        next_tick += period;
-        std::this_thread::sleep_until(next_tick);
     }
 
-    ipc_publish_close(pub);
-    std::printf("camera_sim_node: shutting down (seq=%u)\n", seq);
+    ipc_unpublish(pub);
+    std::printf("camera_node: shutting down (seq=%u)\n", seq);
     return 0;
 }

@@ -1,5 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
-#include "ipc/bus.h"
+#include "ipc/ipc.h"
 #include "ipc/mq.h"
 #include "ipc/shm.h"
 #include <stdlib.h>

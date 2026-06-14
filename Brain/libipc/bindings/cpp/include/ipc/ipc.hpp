@@ -1,5 +1,5 @@
 #pragma once
-#include "ipc/bus.h"
+#include "ipc/ipc.h"
 #include <optional>
 #include <cstddef>
 
